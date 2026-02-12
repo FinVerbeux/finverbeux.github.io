@@ -3,7 +3,7 @@ const siteConfig = {
     title: "TSN.RED TOOLS",
     subtitle: "Boîte à outils développeur & data",
     author: "FinVerbeux",
-    portfolio: "https://tsn.red",
+    portfolio: "https://portfolio-58.tsn.red/",
     
     // Ajoute tes outils ici. 
     // Format: { titre, description, lien, icone (FontAwesome), externe (true/false) }
@@ -65,4 +65,5 @@ const siteConfig = {
             icon: "fa-solid fa-qrcode" 
         }
     ]
+
 };
