@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter - TSN Tools</title>
+    
+    <!-- Import du style global -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Icones FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Styles spécifiques à cette page pour l'éditeur */
+        .editor-wrapper {
+            display: flex;
+            gap: 20px;
+            height: 70vh; /* Prend une bonne hauteur de l'écran */
+            margin-top: 20px;
+        }
+        
+        .editor-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        /* Personnalisation du textarea et de la div de sortie */
+        textarea, #output {
+            flex: 1;
+            width: 100%;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'JetBrains Mono', monospace; /* Police codeur */
+            font-size: 14px;
+            resize: none; /* On gère la taille avec le flex */
+            box-sizing: border-box;
+            border: 1px solid var(--border);
+            background-color: #0d1117; /* Fond très sombre */
+            color: var(--text-main);
+            overflow: auto;
+            white-space: pre; /* Garde le formatage */
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        /* Boutons d'action */
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-small {
+            padding: 5px 15px;
+            font-size: 0.8rem;
+        }
+
+        .btn-secondary {
+            background-color: #30363d;
+        }
+        .btn-secondary:hover { background-color: #484f58; }
+
+        /* Couleurs pour la coloration syntaxique (Thème Dark) */
+        .json-key { color: #7ee787; }      /* Vert */
+        .json-string { color: #a5d6ff; }   /* Bleu clair */
+        .json-number { color: #79c0ff; }   /* Bleu */
+        .json-boolean { color: #ff7b72; }  /* Rouge doux */
+        .json-null { color: #ff7b72; }     /* Rouge doux */
+        
+        .error-msg { color: #ff7b72; font-weight: bold; }
+
+        /* Mobile : Colonnes l'une sous l'autre */
+        @media (max-width: 768px) {
+            .editor-wrapper { flex-direction: column; height: auto; }
+            textarea, #output { height: 300px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de navigation -->
+    <div class="nav-bar">
+        <a href="index.html" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+        </a>
+    </div>
+
+    <!-- Contenu Principal -->
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px 20px 20px;">
+        
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1 style="margin:0;"><i class="fa-solid fa-code" style="color:var(--accent)"></i> JSON Formatter</h1>
+                <p class="subtitle" style="margin:5px 0 0 0;">Validez, formatez et colorez votre code.</p>
+            </div>
+            
+            <!-- Actions principales -->
+            <div class="actions">
+                <button onclick="processJSON('beautify')"><i class="fa-solid fa-indent"></i> Formater</button>
+                <button onclick="processJSON('minify')" class="btn-secondary"><i class="fa-solid fa-compress"></i> Minifier</button>
+            </div>
+        </div>
+
+        <div class="editor-wrapper">
+            <!-- Zone Entrée -->
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span><i class="fa-solid fa-file-import"></i> Entrée (Raw)</span>
+                    <button onclick="clearInput()" class="btn-small btn-secondary">Effacer</button>
+                </div>
+                <textarea id="inputJson" placeholder='Collez votre JSON ici... ex: {"id":1, "nom":"test"}' spellcheck="false"></textarea>
+            </div>
+
+            <!-- Zone Sortie -->
+            <div class="editor-box">
+                <div class="editor-header">
+                    <span><i class="fa-solid fa-file-code"></i> Résultat</span>
+                    <button onclick="copyOutput()" class="btn-small btn-secondary" id="btnCopy"><i class="fa-regular fa-copy"></i> Copier</button>
+                </div>
+                <div id="output"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const inputArea = document.getElementById('inputJson');
+        const outputArea = document.getElementById('output');
+
+        function processJSON(mode) {
+            const raw = inputArea.value.trim();
+            if (!raw) {
+                outputArea.innerHTML = "";
+                return;
+            }
+
+            try {
+                const jsonObj = JSON.parse(raw);
+                
+                if (mode === 'beautify') {
+                    // Convertir en string formatée
+                    const formatted = JSON.stringify(jsonObj, null, 4);
+                    // Appliquer les couleurs
+                    outputArea.innerHTML = syntaxHighlight(formatted);
+                } else {
+                    // Minifier (tout sur une ligne)
+                    const minified = JSON.stringify(jsonObj);
+                    // Pour le minifié, on met pas de couleurs pour garder la perf et la compacité
+                    outputArea.textContent = minified;
+                }
+            } catch (e) {
+                outputArea.innerHTML = `<span class="error-msg"><i class="fa-solid fa-triangle-exclamation"></i> JSON Invalide :<br>${e.message}</span>`;
+            }
+        }
+
+        // Fonction magique pour mettre les couleurs
+        function syntaxHighlight(json) {
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function clearInput() {
+            inputArea.value = "";
+            outputArea.innerHTML = "";
+            inputArea.focus();
+        }
+
+        function copyOutput() {
+            const textToCopy = outputArea.innerText;
+            if(!textToCopy) return;
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const btn = document.getElementById('btnCopy');
+                const original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copié !';
+                setTimeout(() => btn.innerHTML = original, 2000);
+            });
+        }
+    </script>
+</body>
+</html>

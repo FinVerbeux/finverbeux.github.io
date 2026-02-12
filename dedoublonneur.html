@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dédoublonneur</title>
+    <link rel="stylesheet" href="style.css"> <!-- NOUVEAU DESIGN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Barre de navigation commune -->
+    <div class="nav-bar">
+        <a href="index.html" class="back-btn">
+            <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+        </a>
+    </div>
+
+    <!-- Contenu spécifique centré -->
+    <div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+        <h1><i class="fa-solid fa-filter"></i> Dédoublonneur</h1>
+        <p class="subtitle">Copiez votre liste, je supprime les doublons.</p>
+
+        <div style="display: flex; gap: 20px; margin-top: 20px;">
+            <div style="flex:1">
+                <textarea id="inputList" placeholder="Collez votre liste ici..."></textarea>
+            </div>
+            <div style="flex:1">
+                <textarea id="outputList" readonly placeholder="Résultat propre..."></textarea>
+            </div>
+        </div>
+
+        <button onclick="dedoubler()" style="width: 100%; margin-top: 20px;">Nettoyer la liste</button>
+        <div id="stats" style="margin-top: 15px; color: var(--accent);"></div>
+    </div>
+    <script>
+        function dedoubler() {
+            const rawText = document.getElementById('inputList').value;
+            const lines = rawText.split('\n');
+            const uniqueLines = new Set();
+            let doublonsCount = 0;
+            let initialCount = 0;
+
+            lines.forEach(line => {
+                const cleanLine = line.trim();
+                if (cleanLine !== "") {
+                    initialCount++;
+                    if (uniqueLines.has(cleanLine)) {
+                        doublonsCount++;
+                    } else {
+                        uniqueLines.add(cleanLine);
+                    }
+                }
+            });
+
+            // Convertir le Set en tableau et rejoindre par des sauts de ligne
+            document.getElementById('outputList').value = Array.from(uniqueLines).join('\n');
+            
+            // Afficher les stats
+            const statsDiv = document.getElementById('stats');
+            statsDiv.style.display = 'block';
+            statsDiv.innerHTML = `Analyse terminée : <br>
+            - Lignes au départ : ${initialCount}<br>
+            - Doublons supprimés : ${doublonsCount}<br>
+            - Lignes restantes : ${uniqueLines.size}`;
+        }
+    </script>
+</body>
+</html>

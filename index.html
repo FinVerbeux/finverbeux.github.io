@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chargement...</title>
+    <!-- Lien vers notre CSS -->
+    <link rel="stylesheet" href="style.css">
+    <!-- FontAwesome pour les icones Pro -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <header>
+        <h1 id="siteTitle"></h1>
+        <div class="subtitle" id="siteSubtitle"></div>
+    </header>
+
+    <!-- C'est ici que les cartes vont s'insérer automatiquement -->
+    <div class="container" id="toolsGrid"></div>
+
+    <footer id="footerText"></footer>
+
+    <!-- Import de la config -->
+    <script src="config.js"></script>
+    <script>
+        // Mise à jour des textes globaux
+        document.title = siteConfig.title;
+        document.getElementById('siteTitle').innerText = siteConfig.title;
+        document.getElementById('siteSubtitle').innerText = siteConfig.subtitle;
+        document.getElementById('footerText').innerText = "© " + new Date().getFullYear() + " " + siteConfig.author;
+
+        // Génération des cartes
+        const grid = document.getElementById('toolsGrid');
+
+        siteConfig.tools.forEach(tool => {
+            // Création du lien (la carte entière est cliquable)
+            const card = document.createElement('a');
+            card.href = tool.url;
+            card.className = 'tool-card';
+            if (tool.highlight) card.classList.add('highlight');
+            if (tool.external) card.target = "_blank"; // Ouvre dans un nouvel onglet
+
+            // Contenu HTML de la carte
+            card.innerHTML = `
+                <i class="${tool.icon}"></i>
+                <h3>${tool.title} ${tool.external ? '<i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.7em; margin-left:5px;"></i>' : ''}</h3>
+                <p>${tool.desc}</p>
+            `;
+
+            grid.appendChild(card);
+        });
+    </script>
+</body>
+</html>

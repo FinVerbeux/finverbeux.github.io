@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Parser</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+    /* uniquement le minimum spécifique */
+
+    .params-table{
+        width:100%;
+        border-collapse:collapse;
+        font-family:'JetBrains Mono', monospace;
+        font-size:.85rem;
+        margin-top:10px;
+    }
+
+    .params-table td{
+        border-bottom:1px solid var(--border);
+        padding:6px;
+    }
+
+    .params-table input{
+        padding:6px;
+        font-size:.85rem;
+    }
+
+    .preview{
+        width:100%;
+        height:350px;
+        border:1px solid var(--border);
+        border-radius:6px;
+        margin-top:15px;
+    }
+
+    .btn-row{
+        display:flex;
+        gap:10px;
+        flex-wrap:wrap;
+        margin-top:10px;
+    }
+
+    .small-btn{
+        padding:6px 10px;
+        font-size:.8rem;
+    }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="nav-bar">
+    <a href="index.html" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+    </a>
+</div>
+
+<!-- CONTENU SIMPLE CENTRÉ -->
+<div style="max-width: 900px; margin: 0 auto; padding: 20px;">
+
+    <h1><i class="fa-solid fa-link"></i> URL Parser</h1>
+    <p class="subtitle">Analyse, modifie et reconstruit automatiquement tes paramètres</p>
+
+    <!-- URL input -->
+    <textarea id="urlInput"
+        placeholder="https://example.com/page?id=42&name=Maxime#top"
+        oninput="parseURL()"></textarea>
+
+    <div class="btn-row">
+        <button onclick="copyURL()">Copier</button>
+        <button onclick="encodeFull()" class="btn-secondary">Encode</button>
+        <button onclick="decodeFull()" class="btn-secondary">Decode</button>
+        <button onclick="clearAll()" class="btn-secondary">Effacer</button>
+    </div>
+
+    <!-- Infos -->
+    <div id="infos" style="margin-top:15px; font-family:'JetBrains Mono'; color:var(--text-muted); font-size:.85rem"></div>
+
+    <!-- Paramètres -->
+    <h3 style="margin-top:25px;">Paramètres</h3>
+
+    <table class="params-table">
+        <tbody id="paramsBody"></tbody>
+    </table>
+
+    <button onclick="addParam()" style="width:100%; margin-top:10px;">
+        <i class="fa-solid fa-plus"></i> Ajouter un paramètre
+    </button>
+
+    <!-- Preview -->
+    <h3 style="margin-top:30px;">Preview (iframe)</h3>
+    <iframe id="preview" class="preview"></iframe>
+
+</div>
+
+<script>
+const input = document.getElementById('urlInput');
+const body = document.getElementById('paramsBody');
+const infos = document.getElementById('infos');
+const preview = document.getElementById('preview');
+
+let baseURL="";
+
+/* PARSE */
+function parseURL(){
+    const val=input.value.trim();
+    if(!val) return;
+
+    try{
+        const u=new URL(val);
+
+        baseURL=u.origin+u.pathname+(u.hash||"");
+
+        infos.innerHTML=`
+        protocole: ${u.protocol} |
+        host: ${u.host} |
+        path: ${u.pathname} |
+        hash: ${u.hash || "-"}
+        `;
+
+        body.innerHTML="";
+
+        u.searchParams.forEach((v,k)=>{
+            createRow(k,v);
+        });
+
+        updatePreview();
+
+    }catch{}
+}
+
+/* ROW */
+function createRow(key="",value=""){
+    const tr=document.createElement('tr');
+
+    tr.innerHTML=`
+        <td><input placeholder="key" value="${decodeURIComponent(key)}"></td>
+        <td><input placeholder="value" value="${decodeURIComponent(value)}"></td>
+        <td style="color:var(--accent)"></td>
+        <td><button class="small-btn btn-secondary">✕</button></td>
+    `;
+
+    const inputs=tr.querySelectorAll('input');
+    const encoded=tr.children[2];
+
+    function update(){
+        encoded.textContent=
+            encodeURIComponent(inputs[0].value)+"="+encodeURIComponent(inputs[1].value);
+        rebuildURL();
+    }
+
+    inputs.forEach(i=>i.oninput=update);
+
+    tr.querySelector('button').onclick=()=>{
+        tr.remove();
+        rebuildURL();
+    };
+
+    update();
+    body.appendChild(tr);
+}
+
+function addParam(){ createRow(); }
+
+/* REBUILD */
+function rebuildURL(){
+    const rows=[...body.querySelectorAll('tr')];
+
+    const params=rows.map(r=>{
+        const i=r.querySelectorAll('input');
+        if(!i[0].value) return null;
+        return encodeURIComponent(i[0].value)+"="+encodeURIComponent(i[1].value);
+    }).filter(Boolean);
+
+    const final=params.length? baseURL+"?"+params.join("&"):baseURL;
+
+    input.value=final;
+    updatePreview();
+}
+
+/* preview */
+function updatePreview(){
+    preview.src=input.value;
+}
+
+/* utils */
+function copyURL(){ navigator.clipboard.writeText(input.value); }
+function encodeFull(){ input.value=encodeURI(input.value); }
+function decodeFull(){ input.value=decodeURI(input.value); }
+function clearAll(){
+    input.value="";
+    body.innerHTML="";
+    preview.src="";
+    infos.innerHTML="";
+}
+</script>
+
+</body>
+</html>

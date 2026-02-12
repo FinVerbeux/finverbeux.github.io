@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Manipulateur de Texte - TSN Tools</title>
+
+<!-- Style global -->
+<link rel="stylesheet" href="style.css">
+
+<!-- FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+/* Styles spécifiques uniquement à CET outil */
+
+.tool-content {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* textarea principal */
+#inputText {
+    height: 260px;
+    resize: vertical;
+}
+
+/* stats */
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* sections */
+.section-title {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin: 18px 0 10px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+/* groupes de boutons */
+.btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* variantes */
+.btn-success { background:#238636; }
+.btn-success:hover { background:#2ea043; }
+
+.btn-danger { background:#da3633; }
+.btn-danger:hover { background:#f85149; }
+
+/* cartes internes */
+.card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="nav-bar">
+    <a href="index.html" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+    </a>
+</div>
+
+<!-- PAGE -->
+<div class="tool-page">
+
+    <!-- Header -->
+    <div class="tool-header">
+        <div>
+            <h1><i class="fa-solid fa-pen" style="color:var(--accent)"></i> Manipulateur de Texte</h1>
+            <p class="subtitle">Transformations, statistiques et utilitaires rapides</p>
+        </div>
+    </div>
+
+    <div class="tool-content">
+
+        <!-- Zone texte -->
+        <div class="card">
+            <textarea id="inputText" placeholder="Collez ou tapez votre texte..." oninput="updateStats()"></textarea>
+
+            <div class="stats">
+                <span id="charCount">0 caractères</span>
+                <span id="charNoSpace">0 sans espaces</span>
+                <span id="wordCount">0 mots</span>
+                <span id="lineCount">0 lignes</span>
+                <span id="sentenceCount">0 phrases</span>
+                <span id="readingTime">0 sec lecture</span>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card">
+
+            <div class="section-title">Transformations</div>
+            <div class="btn-group">
+                <button onclick="transform('upper')">MAJUSCULES</button>
+                <button onclick="transform('lower')">minuscules</button>
+                <button onclick="transform('capitalize')">Capitalize</button>
+                <button onclick="transform('alternated')">aLtErNé</button>
+                <button onclick="transform('reverse')">Inverser</button>
+                <button onclick="transform('slug')">Slug URL</button>
+            </div>
+
+            <div class="section-title">Lignes</div>
+            <div class="btn-group">
+                <button onclick="sortLines()">Trier A→Z</button>
+                <button onclick="sortLines(true)">Trier Z→A</button>
+                <button onclick="removeDuplicates()">Supprimer doublons</button>
+                <button onclick="removeEmpty()">Supprimer lignes vides</button>
+            </div>
+
+            <div class="section-title">Utilitaires</div>
+            <div class="btn-group">
+                <button onclick="cleanSpaces()">Nettoyer espaces</button>
+                <button onclick="formatJSON()">JSON Pretty</button>
+                <button onclick="minifyJSON()">JSON Minify</button>
+                <button onclick="b64encode()">Base64 Encode</button>
+                <button onclick="b64decode()">Base64 Decode</button>
+            </div>
+
+            <div class="section-title">Actions</div>
+            <div class="btn-group">
+                <button class="btn-success" onclick="copyText()"><i class="fa-regular fa-copy"></i> Copier</button>
+                <button onclick="download()"><i class="fa-solid fa-download"></i> Télécharger</button>
+                <button class="btn-danger" onclick="clearText()"><i class="fa-solid fa-trash"></i> Effacer</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const input = document.getElementById('inputText');
+
+function updateStats(){
+    const t=input.value;
+
+    charCount.innerText=t.length+" caractères";
+    charNoSpace.innerText=t.replace(/\s/g,'').length+" sans espaces";
+
+    const words=t.trim()?t.trim().split(/\s+/).length:0;
+    wordCount.innerText=words+" mots";
+
+    const lines=t? t.split(/\r?\n/).length:0;
+    lineCount.innerText=lines+" lignes";
+
+    const sentences=(t.match(/[.!?]+/g)||[]).length;
+    sentenceCount.innerText=sentences+" phrases";
+
+    readingTime.innerText=Math.ceil(words/200*60)+" sec lecture";
+}
+
+function transform(type){
+    let t=input.value;
+
+    switch(type){
+        case 'upper': t=t.toUpperCase(); break;
+        case 'lower': t=t.toLowerCase(); break;
+        case 'capitalize': t=t.toLowerCase().replace(/\b\w/g,l=>l.toUpperCase()); break;
+        case 'alternated': t=[...t].map((c,i)=>i%2?c.toUpperCase():c.toLowerCase()).join(''); break;
+        case 'reverse': t=[...t].reverse().join(''); break;
+        case 'slug': t=t.toLowerCase().replace(/[^\w\s-]/g,'').replace(/\s+/g,'-'); break;
+    }
+
+    input.value=t;
+    updateStats();
+}
+
+function sortLines(reverse=false){
+    let lines=input.value.split('\n').sort();
+    if(reverse) lines.reverse();
+    input.value=lines.join('\n');
+    updateStats();
+}
+
+function removeDuplicates(){ input.value=[...new Set(input.value.split('\n'))].join('\n'); updateStats(); }
+function removeEmpty(){ input.value=input.value.split('\n').filter(l=>l.trim()).join('\n'); updateStats(); }
+function cleanSpaces(){ input.value=input.value.replace(/\s+/g,' ').trim(); updateStats(); }
+
+function formatJSON(){ try{ input.value=JSON.stringify(JSON.parse(input.value),null,2);}catch{} }
+function minifyJSON(){ try{ input.value=JSON.stringify(JSON.parse(input.value));}catch{} }
+
+function b64encode(){ input.value=btoa(unescape(encodeURIComponent(input.value))); }
+function b64decode(){ input.value=decodeURIComponent(escape(atob(input.value))); }
+
+function copyText(){ navigator.clipboard.writeText(input.value); }
+
+function download(){
+    const blob=new Blob([input.value],{type:'text/plain'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='texte.txt';
+    a.click();
+}
+
+function clearText(){ input.value=""; updateStats(); }
+
+updateStats();
+</script>
+
+</body>
+</html>

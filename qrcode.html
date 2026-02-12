@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code Generator - TSN Tools</title>
+
+    <!-- Style global -->
+    <link rel="stylesheet" href="style.css">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+    /* Styles spécifiques à CET outil */
+
+    .tool-content {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        align-items: center;
+    }
+
+    .qr-input {
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .qr-container {
+        background: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 240px;
+        min-height: 240px;
+    }
+
+    .qr-container img {
+        max-width: 220px;
+    }
+
+    .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="nav-bar">
+    <a href="index.html" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+    </a>
+</div>
+
+<!-- PAGE -->
+<div class="tool-page">
+
+    <!-- Header -->
+    <div class="tool-header">
+        <div>
+            <h1><i class="fa-solid fa-qrcode" style="color:var(--accent)"></i> Générateur QR Code</h1>
+            <p class="subtitle">Générez instantanément un QR Code depuis un lien ou du texte</p>
+        </div>
+    </div>
+
+    <div class="tool-content">
+
+        <!-- Input -->
+        <div class="card qr-input">
+            <input 
+                type="text" 
+                id="qrText" 
+                placeholder="https://tsn.red"
+                value="https://tsn.red"
+                oninput="generer()"
+            >
+        </div>
+
+        <!-- QR -->
+        <div class="qr-container">
+            <img id="qrImage" src="" alt="QR Code">
+        </div>
+
+        <!-- Actions -->
+        <div class="actions">
+            <button onclick="downloadQR()">
+                <i class="fa-solid fa-download"></i> Télécharger
+            </button>
+
+            <button class="btn-secondary" onclick="clearInput()">
+                <i class="fa-solid fa-trash"></i> Effacer
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+const input = document.getElementById('qrText');
+const img = document.getElementById('qrImage');
+
+function generer() {
+    const text = document.getElementById('qrText').value;
+    const img = document.getElementById('qrImage');
+
+    if(text.trim() === "") return;
+
+    const size = "200x200";
+    const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}&data=${encodeURIComponent(text)}`;
+
+    img.src = url;
+}
+
+
+async function downloadQR() {
+    const image = await fetch(img.src);
+    const blob = await image.blob();
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'qrcode.png';
+    link.click();
+}
+
+function clearInput(){
+    input.value = "";
+    img.src = "";
+    input.focus();
+}
+
+generer();
+</script>
+
+</body>
+</html>

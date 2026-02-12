@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Metadata Viewer</title>
+
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- lib EXIF ultra légère -->
+<script src="https://cdn.jsdelivr.net/npm/exif-js"></script>
+</head>
+
+<body>
+
+<div class="nav-bar">
+    <a href="index.html" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+    </a>
+</div>
+
+<div style="max-width:1000px;margin:0 auto;padding:20px;">
+
+<h1><i class="fa-solid fa-image"></i> Metadata Viewer</h1>
+<p class="subtitle">Analyse, édite ou supprime les métadonnées d'une image</p>
+
+<!-- DROP -->
+<div id="drop" style="
+border:2px dashed var(--accent);
+padding:30px;
+border-radius:12px;
+text-align:center;
+cursor:pointer;
+margin-bottom:20px;">
+<i class="fa-solid fa-upload"></i> Glisse une image ou clique
+<input type="file" id="fileInput" hidden accept="image/*">
+</div>
+
+<img id="preview" style="max-width:100%;border-radius:10px;margin-bottom:20px;">
+
+<!-- META OUTPUT -->
+<pre id="metaOutput" style="
+background:#0d1117;
+padding:15px;
+border-radius:10px;
+max-height:250px;
+overflow:auto;"></pre>
+
+<!-- EDIT -->
+<div style="display:grid;gap:10px;margin-top:15px;">
+<input id="author" placeholder="Auteur">
+<input id="desc" placeholder="Description">
+<input id="copyright" placeholder="Copyright">
+<input id="comment" placeholder="Commentaire">
+</div>
+
+<div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+<button onclick="saveImage()"><i class="fa-solid fa-floppy-disk"></i> Télécharger modifié</button>
+<button onclick="stripMeta()" class="btn-secondary"><i class="fa-solid fa-broom"></i> Supprimer metadata</button>
+</div>
+
+<div id="status" style="margin-top:10px;color:var(--accent);"></div>
+
+</div>
+
+<script>
+const input=document.getElementById("fileInput");
+const drop=document.getElementById("drop");
+const preview=document.getElementById("preview");
+const metaOutput=document.getElementById("metaOutput");
+const status=document.getElementById("status");
+
+let currentFile;
+
+
+/* ======================
+   DRAG DROP
+====================== */
+drop.onclick=()=>input.click();
+drop.ondragover=e=>e.preventDefault();
+drop.ondrop=e=>{
+    e.preventDefault();
+    loadFile(e.dataTransfer.files[0]);
+};
+input.onchange=e=>loadFile(e.target.files[0]);
+
+
+/* ======================
+   LOAD
+====================== */
+async function loadFile(file){
+    currentFile=file;
+
+    preview.src=URL.createObjectURL(file);
+
+    const hash=await sha256(file);
+
+    EXIF.getData(file,function(){
+        const all=EXIF.getAllTags(this);
+
+        let text="--- Infos générales ---\n";
+        text+=`Nom: ${file.name}\n`;
+        text+=`Type: ${file.type}\n`;
+        text+=`Taille: ${(file.size/1024).toFixed(1)} KB\n`;
+        text+=`SHA-256: ${hash}\n\n`;
+
+        text+="--- EXIF ---\n";
+
+        for(let k in all)
+            text+=`${k}: ${all[k]}\n`;
+
+        metaOutput.textContent=text;
+
+        document.getElementById("author").value=all.Artist||"";
+        document.getElementById("desc").value=all.ImageDescription||"";
+        document.getElementById("copyright").value=all.Copyright||"";
+    });
+
+    status.innerText="Image chargée ✔";
+}
+
+
+/* ======================
+   STRIP
+====================== */
+function stripMeta(){
+    const canvas=document.createElement("canvas");
+    const ctx=canvas.getContext("2d");
+
+    const img=new Image();
+    img.onload=()=>{
+        canvas.width=img.width;
+        canvas.height=img.height;
+        ctx.drawImage(img,0,0);
+
+        preview.src=canvas.toDataURL("image/png");
+
+        status.innerText="Metadata supprimée ✔";
+    };
+    img.src=preview.src;
+}
+
+
+/* ======================
+   SAVE (PNG clean)
+====================== */
+function saveImage(){
+    const a=document.createElement("a");
+    a.href=preview.src;
+    a.download="clean_image.png";
+    a.click();
+}
+
+
+/* ======================
+   SHA256
+====================== */
+async function sha256(file){
+    const buf=await file.arrayBuffer();
+    const hash=await crypto.subtle.digest("SHA-256",buf);
+    return [...new Uint8Array(hash)].map(x=>x.toString(16).padStart(2,"0")).join("");
+}
+</script>
+
+</body>
+</html>

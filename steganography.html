@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Steganography Tool</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+<div class="nav-bar">
+    <a href="index.html" class="back-btn">
+        <i class="fa-solid fa-arrow-left"></i> Retour au Hub
+    </a>
+</div>
+
+<div style="max-width:950px;margin:0 auto;padding:20px;">
+
+<h1><i class="fa-solid fa-user-secret"></i> Steganography Tool</h1>
+<p class="subtitle">Cache un message dans PNG/BMP — 100% local</p>
+
+
+<!-- DROP ZONE -->
+<div id="dropZone" style="
+border:2px dashed var(--accent);
+padding:30px;
+border-radius:12px;
+text-align:center;
+cursor:pointer;
+margin-bottom:15px;">
+<i class="fa-solid fa-image"></i> Glisse ton image ici ou clique
+<input type="file" id="imageInput" accept="image/png,image/bmp" hidden>
+</div>
+
+
+<img id="preview" style="max-width:100%;border-radius:12px;margin-bottom:10px;">
+
+
+<div id="capacity" style="margin-bottom:10px;color:var(--accent);"></div>
+
+
+<textarea id="secretText" placeholder="Message secret..."></textarea>
+
+<input type="password" id="password" placeholder="Mot de passe (optionnel XOR)" style="margin-top:10px;">
+
+
+<label style="display:block;margin-top:10px">
+<input type="checkbox" id="hexToggle"> Afficher preview hex
+</label>
+
+<pre id="hexPreview" style="
+display:none;
+max-height:150px;
+overflow:auto;
+background:#111;
+color:#0f0;
+padding:10px;
+border-radius:10px;
+font-size:12px;"></pre>
+
+
+<div style="display:flex;gap:10px;margin-top:15px;flex-wrap:wrap;">
+<button onclick="encodeMessage()"><i class="fa-solid fa-lock"></i> Encoder</button>
+<button onclick="decodeMessage()"><i class="fa-solid fa-unlock"></i> Décoder</button>
+<button onclick="clearMessage()"><i class="fa-solid fa-eraser"></i> Clear message</button>
+<button onclick="downloadImage()"><i class="fa-solid fa-download"></i> Télécharger</button>
+</div>
+
+<div id="status" style="margin-top:15px;color:var(--accent);"></div>
+
+</div>
+
+
+<script>
+const canvas = document.createElement("canvas");
+const ctx = canvas.getContext("2d");
+
+const preview = document.getElementById("preview");
+const dropZone = document.getElementById("dropZone");
+const imageInput = document.getElementById("imageInput");
+const status = document.getElementById("status");
+const capacityDiv = document.getElementById("capacity");
+const hexPreview = document.getElementById("hexPreview");
+
+let imageLoaded=false;
+
+
+/* ======================
+   DRAG & DROP
+====================== */
+dropZone.onclick=()=>imageInput.click();
+
+dropZone.ondragover=e=>e.preventDefault();
+
+dropZone.ondrop=e=>{
+    e.preventDefault();
+    loadFile(e.dataTransfer.files[0]);
+};
+
+imageInput.onchange=e=>loadFile(e.target.files[0]);
+
+
+/* ======================
+   LOAD IMAGE
+====================== */
+function loadFile(file){
+    const img=new Image();
+    img.onload=()=>{
+        canvas.width=img.width;
+        canvas.height=img.height;
+        ctx.drawImage(img,0,0);
+
+        preview.src=canvas.toDataURL();
+        imageLoaded=true;
+
+        const cap=Math.floor((canvas.width*canvas.height*3)/8)-10;
+        capacityDiv.innerText="Capacité : "+cap+" chars max";
+
+        updateHex();
+        status.innerText="Image chargée ✔";
+    };
+    img.src=URL.createObjectURL(file);
+}
+
+
+/* ======================
+   XOR
+====================== */
+function xor(str,key){
+    if(!key) return str;
+    let out="";
+    for(let i=0;i<str.length;i++){
+        out+=String.fromCharCode(str.charCodeAt(i)^key.charCodeAt(i%key.length));
+    }
+    return out;
+}
+
+
+/* ======================
+   ENCODE
+====================== */
+function encodeMessage(){
+    if(!imageLoaded) return;
+
+    const pass=document.getElementById("password").value;
+    let msg=document.getElementById("secretText").value+"###END###";
+    msg=xor(msg,pass);
+
+    const bits=textToBinary(msg);
+
+    const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const px=imgData.data;
+
+    let bi=0;
+
+    for(let i=0;i<px.length&&bi<bits.length;i+=4){
+        for(let c=0;c<3;c++){
+            px[i+c]=(px[i+c]&254)|Number(bits[bi++]);
+            if(bi>=bits.length) break;
+        }
+    }
+
+    ctx.putImageData(imgData,0,0);
+    preview.src=canvas.toDataURL();
+
+    status.innerText="Encodé ✔";
+    updateHex();
+}
+
+
+/* ======================
+   DECODE
+====================== */
+function decodeMessage(){
+    if(!imageLoaded) return;
+
+    const pass=document.getElementById("password").value;
+
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    let bits="";
+    for(let i=0;i<data.length;i+=4)
+        for(let c=0;c<3;c++)
+            bits+=(data[i+c]&1);
+
+    let text=binaryToText(bits);
+    text=xor(text,pass);
+
+    const end=text.indexOf("###END###");
+
+    if(end===-1){
+        status.innerText="Aucun message";
+        return;
+    }
+
+    document.getElementById("secretText").value=text.substring(0,end);
+    status.innerText="Décodé ✔";
+}
+
+
+/* ======================
+   CLEAR MESSAGE
+====================== */
+function clearMessage(){
+    if(!imageLoaded) return;
+
+    const imgData=ctx.getImageData(0,0,canvas.width,canvas.height);
+    const px=imgData.data;
+
+    for(let i=0;i<px.length;i+=4)
+        for(let c=0;c<3;c++)
+            px[i+c]&=254;
+
+    ctx.putImageData(imgData,0,0);
+    preview.src=canvas.toDataURL();
+
+    status.innerText="Message effacé ✔";
+}
+
+
+/* ======================
+   HEX PREVIEW
+====================== */
+document.getElementById("hexToggle").onchange=e=>{
+    hexPreview.style.display=e.target.checked?"block":"none";
+};
+
+function updateHex(){
+    if(!document.getElementById("hexToggle").checked) return;
+
+    const data=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+    let out="";
+    for(let i=0;i<256;i++){
+        out+=data[i].toString(16).padStart(2,"0")+" ";
+        if(i%16===15) out+="\n";
+    }
+
+    hexPreview.textContent=out;
+}
+
+
+/* ======================
+   DOWNLOAD
+====================== */
+function downloadImage(){
+    const a=document.createElement("a");
+    a.download="steg.png";
+    a.href=canvas.toDataURL();
+    a.click();
+}
+
+
+/* ======================
+   BINARY HELPERS
+====================== */
+function textToBinary(str){
+    return [...str].map(c=>c.charCodeAt(0).toString(2).padStart(8,"0")).join("");
+}
+
+function binaryToText(bin){
+    let t="";
+    for(let i=0;i<bin.length;i+=8)
+        t+=String.fromCharCode(parseInt(bin.slice(i,i+8),2));
+    return t;
+}
+</script>
+
+</body>
+</html>
