@@ -1,0 +1,2996 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>root@localhost: ~</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        @font-face {
+            font-family: 'MonoFont';
+            src: local('Consolas'), local('Monaco'), local('Fira Code'), local('Courier New');
+        }
+
+        body {
+            background: #0c0c0c;
+            color: #00ff00;
+            font-family: 'MonoFont', 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        body.theme-mono {
+            filter: grayscale(1) contrast(1.15);
+        }
+
+        body.theme-pink {
+            background: #100312;
+            color: #ff4fd8;
+        }
+
+        body.theme-amber {
+            background: #151002;
+            color: #ffb347;
+        }
+
+        .terminal-header {
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            font-size: 12px;
+            color: #888;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-close { background: #ff5f56; }
+        .btn-minimize { background: #ffbd2e; }
+        .btn-maximize { background: #27c93f; }
+
+        .terminal-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 12px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 13px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #666;
+        }
+
+        .stat-value {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .stat-value.warning {
+            color: #ffaa00;
+        }
+
+        .stat-value.critical {
+            color: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        .logs-container {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            margin-bottom: 12px;
+            scrollbar-width: thin;
+            scrollbar-color: #333 #0c0c0c;
+        }
+
+        .logs-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .logs-container::-webkit-scrollbar-track {
+            background: #0c0c0c;
+        }
+
+        .logs-container::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+        }
+
+        .log-entry.qte-prompt {
+            animation: fadeIn 0.3s forwards, pulse 0.5s infinite;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .log-timestamp {
+            color: #666;
+            margin-right: 8px;
+        }
+
+        .log-success { color: #00ff00; }
+        .log-warning { color: #ffaa00; }
+        .log-error { color: #ff4444; }
+        .log-info { color: #4488ff; }
+
+        .command-panel {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 12px;
+        }
+
+        .panel-title {
+            color: #888;
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .action-btn, .upgrade-btn, .consumable-btn, .target-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #00ff00;
+            padding: 10px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: left;
+            transition: all 0.2s;
+            border-radius: 2px;
+        }
+
+        .action-btn:hover:not(:disabled), .upgrade-btn:hover:not(:disabled), 
+        .consumable-btn:hover:not(:disabled), .target-btn:hover:not(:disabled) {
+            background: #2a2a2a;
+            border-color: #00ff00;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+        }
+
+        .action-btn:disabled, .upgrade-btn:disabled, 
+        .consumable-btn:disabled, .target-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .consumable-btn {
+            border-color: #4488ff;
+            color: #4488ff;
+        }
+
+        .consumable-btn:hover:not(:disabled) {
+            border-color: #6699ff;
+            box-shadow: 0 0 8px rgba(68, 136, 255, 0.3);
+        }
+
+        .target-btn {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
+        .target-btn:hover:not(:disabled) {
+            border-color: #ff6666;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+        }
+
+        .target-btn.compromised {
+            border-color: #00ff00;
+            color: #00ff00;
+            opacity: 0.6;
+        }
+
+        .btn-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-name {
+            flex: 1;
+        }
+
+        .btn-count {
+            color: #666;
+            font-size: 11px;
+        }
+
+        .btn-cost {
+            color: #ffaa00;
+            font-size: 11px;
+        }
+
+        .btn-production {
+            color: #4488ff;
+            font-size: 11px;
+            margin-top: 2px;
+        }
+
+        .command-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: #1a1a1a;
+            border-radius: 2px;
+        }
+
+        .command-line.qte-active {
+            border: 1px solid #ff4444;
+            box-shadow: 0 0 12px rgba(255, 68, 68, 0.5);
+            animation: qte-pulse 0.5s infinite;
+        }
+
+        @keyframes qte-pulse {
+            0%, 100% { box-shadow: 0 0 12px rgba(255, 68, 68, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 68, 68, 0.8); }
+        }
+
+        .prompt {
+            color: #00ff00;
+            font-weight: bold;
+        }
+
+        .command-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .skill-section {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .skill-btn {
+            flex: 1;
+            min-width: 250px;
+            background: #1a1a1a;
+            border: 1px solid #ff4444;
+            color: #ff4444;
+            padding: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            text-align: left;
+            transition: all 0.2s;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skill-btn:hover:not(:disabled) {
+            background: #2a1a1a;
+            border-color: #ff6666;
+            box-shadow: 0 0 12px rgba(255, 68, 68, 0.4);
+        }
+
+        .skill-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .skill-btn.unlocked {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        .skill-btn.unlocked:hover:not(:disabled) {
+            border-color: #ffcc00;
+            box-shadow: 0 0 12px rgba(255, 170, 0, 0.4);
+        }
+
+        .skill-level {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 10px;
+            color: #888;
+        }
+
+        .skill-cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: #ff4444;
+            transition: width 0.1s linear;
+        }
+
+        .instability-bar, .malfunction-bar, .temperature-bar {
+            height: 6px;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .instability-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffaa00, #ff4444);
+            transition: width 0.3s;
+        }
+
+        .malfunction-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4488ff, #ff4444);
+            transition: width 0.3s;
+        }
+
+        .temperature-fill {
+            height: 100%;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .temperature-fill.normal {
+            background: linear-gradient(90deg, #4488ff, #00ff00);
+        }
+
+        .temperature-fill.warning {
+            background: linear-gradient(90deg, #ffaa00, #ff8800);
+        }
+
+        .temperature-fill.critical {
+            background: linear-gradient(90deg, #ff4444, #ff0000);
+        }
+
+        .network-crash, .system-malfunction {
+            color: #ff4444;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px;
+            background: #2a1a1a;
+            border: 1px solid #ff4444;
+            border-radius: 2px;
+            margin-bottom: 12px;
+            animation: pulse 1s infinite;
+        }
+
+        .system-malfunction {
+            border-color: #ffaa00;
+            color: #ffaa00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: #666;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
+            transition: all 0.2s;
+            border-radius: 2px 2px 0 0;
+        }
+
+        .tab-btn.active {
+            background: #1a1a1a;
+            color: #00ff00;
+            border: 1px solid #333;
+            border-bottom: 1px solid #1a1a1a;
+        }
+
+        .tab-btn:hover:not(.active) {
+            color: #00ff00;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .clickable-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .requirement-text {
+            font-size: 11px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .requirement-met {
+            color: #00ff00;
+        }
+
+        .requirement-not-met {
+            color: #ff4444;
+        }
+
+        .dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .dialog-overlay.active {
+            display: flex;
+        }
+
+        .dialog-box {
+            background: #1a1a1a;
+            border: 2px solid #00ff00;
+            padding: 20px;
+            border-radius: 4px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .dialog-header {
+            color: #00ff00;
+            font-size: 16px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+
+        .dialog-text {
+            color: #888;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .dialog-choice {
+            background: #0c0c0c;
+            border: 1px solid #333;
+            color: #00ff00;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 2px;
+        }
+
+        .dialog-choice:hover {
+            background: #1a1a1a;
+            border-color: #00ff00;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+        }
+
+        .dialog-result {
+            color: #ffaa00;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                font-size: 12px;
+            }
+            
+            .buttons-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-bar {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-header">
+        <div class="terminal-title">
+            <span>●</span>
+            <span>root@localhost: ~</span>
+        </div>
+        <div class="terminal-controls">
+            <button class="terminal-btn btn-close"></button>
+            <button class="terminal-btn btn-minimize"></button>
+            <button class="terminal-btn btn-maximize"></button>
+        </div>
+    </div>
+
+    <div class="terminal-container">
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">[DATA]</span>
+                <span class="stat-value" id="data-display">0 o</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[BANDWIDTH]</span>
+                <span class="stat-value" id="bandwidth-display">0 o/s</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[TEMP]</span>
+                <span class="stat-value" id="temp-display">18°C</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[UPTIME]</span>
+                <span class="stat-value" id="uptime-display">0s</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[PACKETS]</span>
+                <span class="stat-value" id="packets-display">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[XMR]</span>
+                <span class="stat-value" id="crypto-display">0.00 XMR</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[CORES]</span>
+                <span class="stat-value" id="cores-display">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">[MODE]</span>
+                <span class="stat-value" id="mode-display">DATA</span>
+            </div>
+        </div>
+
+        <div id="temperature-container" style="display: none;">
+            <div class="temperature-bar">
+                <div class="temperature-fill normal" id="temperature-fill"></div>
+            </div>
+        </div>
+
+        <div id="instability-container" style="display: none;">
+            <div class="instability-bar">
+                <div class="instability-fill" id="instability-fill"></div>
+            </div>
+        </div>
+
+        <div id="malfunction-container" style="display: none;">
+            <div class="malfunction-bar">
+                <div class="malfunction-fill" id="malfunction-fill"></div>
+            </div>
+        </div>
+
+        <div id="crash-message" class="network-crash" style="display: none;">
+            ⚠ NETWORK CRASH - SYSTEM RECOVERY IN PROGRESS ⚠
+        </div>
+
+        <div id="malfunction-message" class="system-malfunction" style="display: none;">
+            ⚠ SYSTEM MALFUNCTION DETECTED ⚠
+        </div>
+
+        <div class="logs-container" id="logs">
+            <div class="log-entry log-success">
+                <span class="log-timestamp">[00:00:00]</span>
+                <span>$ System initialized successfully</span>
+            </div>
+            <div class="log-entry log-info">
+                <span class="log-timestamp">[00:00:00]</span>
+                <span>$ Network services starting...</span>
+            </div>
+            <div class="log-entry log-success">
+                <span class="log-timestamp">[00:00:00]</span>
+                <span>$ Type 'help' for available commands</span>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-btn active" data-tab="infrastructure">Infrastructure</button>
+            <button class="tab-btn" data-tab="upgrades">Upgrades</button>
+            <button class="tab-btn" data-tab="consumables">Consumables</button>
+            <button class="tab-btn" data-tab="social">Social Eng.</button>
+            <button class="tab-btn" data-tab="skills">Skills</button>
+            <button class="tab-btn" data-tab="blackmarket">Black Market</button>
+        </div>
+
+        <div id="tab-infrastructure" class="tab-content active">
+            <div class="command-panel">
+                <div class="panel-title">// Network Infrastructure</div>
+                <div class="buttons-grid" id="buildings-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-upgrades" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// System Upgrades</div>
+                <div class="buttons-grid" id="upgrades-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-consumables" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Consumable Items</div>
+                <div class="buttons-grid" id="consumables-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-social" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Social Engineering Targets</div>
+                <div class="buttons-grid" id="targets-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-skills" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Advanced Techniques [USE WITH CAUTION]</div>
+                <div class="skill-section" id="skills-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-blackmarket" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Black Market [XMR Only]</div>
+                <div class="buttons-grid" id="blackmarket-container"></div>
+            </div>
+        </div>
+
+        <div class="command-line" id="command-line">
+            <span class="prompt">user@localhost:~$</span>
+            <input type="text" class="command-input" id="command-input" placeholder="Type 'ping' or click anywhere..." autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <div class="clickable-area" id="clickable-area"></div>
+
+    <!-- Dialog System -->
+    <div class="dialog-overlay" id="dialog-overlay">
+        <div class="dialog-box" id="dialog-box"></div>
+    </div>
+
+    <script>
+        // ============================================
+        // GAME STATE & CONFIGURATION
+        // ============================================
+        
+        const GameState = {
+            data: 0n,
+            bandwidth: 0n,
+            totalPackets: 0n,
+            startTime: Date.now(),
+            lastSave: Date.now(),
+            lastTick: Date.now(),
+            buildings: {},
+            upgrades: {},
+            consumables: {},
+            temperature: {
+                current: 18,
+                target: 18,
+                maxSafe: 25,
+                lastIncrease: Date.now(),
+                increaseInterval: 300000,
+                productionPenalty: 0,
+                qteActive: false,
+                qteStartTime: 0,
+                qteTimeout: 15000, // 15 secondes pour répondre
+                qteCooldown: 0,
+                qteCommands: ['cooling', 'ventilate', 'fan_ctrl', 'hvac_reset', 'temp_adjust']
+            },
+            skills: {
+                dnsAmplification: { 
+                    level: 0, 
+                    maxLevel: 5,
+                    active: false, 
+                    cooldown: 0, 
+                    baseCooldown: 60000,
+                    duration: 10000,
+                    multiplier: 50
+                },
+                broadcastStorm: { 
+                    level: 0,
+                    maxLevel: 5,
+                    active: false, 
+                    instability: 0, 
+                    crashed: false, 
+                    crashTime: 0, 
+                    crashDuration: 30000,
+                    multiplier: 10
+                },
+                packetInjection: {
+                    level: 0,
+                    maxLevel: 3,
+                    active: false,
+                    cooldown: 0,
+                    baseCooldown: 45000,
+                    duration: 15000,
+                    clickMultiplier: 5
+                }
+            },
+            systemMalfunction: {
+                active: false,
+                severity: 0,
+                startTime: 0,
+                nextMalfunctionCheck: Date.now() + 300000
+            },
+            uiTheme: 'default',
+            miningMode: 'data',
+            crypto: 0,
+            processorCores: 0n,
+            blackMarket: {},
+            rivalAttack: {
+                active: false,
+                endTime: 0,
+                expectedCommand: 'firewall',
+                nextAttackCheck: Date.now() + 120000
+            },
+            contract: {
+                active: null,
+                pool: [
+                    { id: 'contract_data_1', name: 'Generate 1 To in < 5 min', goalType: 'data', goal: 1000000000000n, durationMs: 300000, rewardCrypto: 2.5, rewardSkin: 'pink' },
+                    { id: 'contract_ping_1', name: 'Send 12000 packets in < 6 min', goalType: 'packets', goal: 12000n, durationMs: 360000, rewardCrypto: 2.0, rewardSkin: 'amber' },
+                    { id: 'contract_crash_1', name: 'Trigger 2 network crashes in < 8 min', goalType: 'crashes', goal: 2n, durationMs: 480000, rewardCrypto: 3.5, rewardSkin: 'mono' }
+                ],
+                stats: { crashes: 0n }
+            },
+            targets: {}
+        };
+
+        const DIFFICULTY_MULTIPLIER = 1.2;
+
+        const BUILDINGS = [
+            {
+                id: 'bash_script',
+                name: 'Bash Script',
+                baseCost: 10n,
+                baseProduction: 1n,
+                multiplier: 1.15,
+                description: 'Basic automation script'
+            },
+            {
+                id: 'cisco_switch',
+                name: 'Cisco Switch',
+                baseCost: 100n,
+                baseProduction: 5n,
+                multiplier: 1.15,
+                description: 'Manages local traffic'
+            },
+            {
+                id: 'dedicated_server',
+                name: 'Dedicated Server',
+                baseCost: 1000n,
+                baseProduction: 25n,
+                multiplier: 1.15,
+                description: 'Powerful computing unit'
+            },
+            {
+                id: 'iot_botnet',
+                name: 'IoT Botnet',
+                baseCost: 10000n,
+                baseProduction: 100n,
+                multiplier: 1.15,
+                description: 'Compromised devices network'
+            },
+            {
+                id: 'fiber_backbone',
+                name: 'Fiber Backbone',
+                baseCost: 100000n,
+                baseProduction: 500n,
+                multiplier: 1.15,
+                description: 'High-speed data pipeline'
+            },
+            {
+                id: 'data_center',
+                name: 'Data Center',
+                baseCost: 1000000n,
+                baseProduction: 2500n,
+                multiplier: 1.15,
+                description: 'Industrial scale processing'
+            }
+        ];
+
+        const UPGRADES = [
+            {
+                id: 'ipv6_migration',
+                name: 'IPv6 Migration',
+                cost: 500n,
+                effect: { building: 'cisco_switch', multiplier: 2 },
+                description: 'Double Cisco Switch efficiency',
+                purchased: false
+            },
+            {
+                id: 'rapid_icmp',
+                name: 'Rapid ICMP Burst',
+                cost: 2000n,
+                effect: { type: 'manual_ping', multiplier: 2 },
+                description: 'Double data gained from manual ping commands',
+                purchased: false
+            },
+            {
+                id: 'cpu_overclocking',
+                name: 'CPU Overclocking',
+                cost: 5000n,
+                effect: { type: 'global', multiplier: 1.2 },
+                description: '+20% global production',
+                purchased: false
+            },
+            {
+                id: 'gold_cables',
+                name: 'Gold Plated Cables',
+                cost: 25000n,
+                effect: { type: 'global', multiplier: 1.15 },
+                description: '+15% global production',
+                purchased: false
+            },
+            {
+                id: 'ssd_raid',
+                name: 'SSD RAID Array',
+                cost: 100000n,
+                effect: { building: 'dedicated_server', multiplier: 3 },
+                description: 'Triple Dedicated Server output',
+                purchased: false
+            },
+            {
+                id: 'quantum_encryption',
+                name: 'Quantum Encryption',
+                cost: 500000n,
+                effect: { type: 'global', multiplier: 1.5 },
+                description: '+50% global production',
+                purchased: false
+            },
+            {
+                id: 'neural_network',
+                name: 'Neural Network AI',
+                cost: 2000000n,
+                effect: { type: 'global', multiplier: 2 },
+                description: 'Double all production',
+                purchased: false
+            }
+        ];
+
+        const CONSUMABLES = [
+            {
+                id: 'repair_kit',
+                name: 'Emergency Repair Kit',
+                cost: 1000n,
+                description: 'Instantly fix system malfunction',
+                effect: 'repair',
+                count: 0
+            },
+            {
+                id: 'coolant',
+                name: 'Liquid Nitrogen Coolant',
+                cost: 2500n,
+                description: 'Reduce crash recovery time by 4s',
+                effect: 'cooldown_reduce',
+                value: 4000,
+                count: 0
+            },
+            {
+                id: 'ac_repair',
+                name: 'AC Repair Kit',
+                cost: 3000n,
+                description: 'Reduce temperature by 10°C instantly',
+                effect: 'cool_down',
+                value: 10,
+                count: 0
+            },
+            {
+                id: 'stability_patch',
+                name: 'Stability Patch',
+                cost: 5000n,
+                description: 'Reduce instability by 50%',
+                effect: 'stability',
+                count: 0
+            },
+            {
+                id: 'bandwidth_boost',
+                name: 'Bandwidth Booster',
+                cost: 10000n,
+                description: 'x3 production for 30 seconds',
+                effect: 'boost',
+                multiplier: 3,
+                duration: 30000,
+                count: 0
+            },
+            {
+                id: 'malfunction_shield',
+                name: 'Malfunction Shield',
+                cost: 15000n,
+                description: 'Prevent next malfunction',
+                effect: 'shield',
+                count: 0
+            },
+            {
+                id: 'phone_list',
+                name: 'Corporate Phone List',
+                cost: 50000n,
+                description: 'Unlock social engineering targets',
+                effect: 'unlock_targets',
+                count: 0
+            }
+        ];
+
+        const BLACK_MARKET_ITEMS = [
+            {
+                id: 'quantum_rig',
+                name: 'Quantum Mining Rig',
+                costCrypto: 3,
+                description: '+35% crypto mining output',
+                effect: { type: 'crypto_multiplier', value: 1.35 }
+            },
+            {
+                id: 'rootkit_loader',
+                name: 'Persistent Rootkit Loader',
+                costCrypto: 5,
+                description: '+20% all production forever',
+                effect: { type: 'global_prod_multiplier', value: 1.2 }
+            },
+            {
+                id: 'stealth_hypervisor',
+                name: 'Stealth Hypervisor',
+                costCrypto: 4,
+                description: '-20% rival hack theft',
+                effect: { type: 'hack_loss_reduction', value: 0.8 }
+            }
+        ];
+
+        const SOCIAL_TARGETS = [
+            {
+                id: 'small_biz',
+                name: 'Local Bakery',
+                difficulty: 'easy',
+                requiredLists: 0,
+                baseReward: 100n,
+                permanentBonus: 0.05,
+                compromised: false,
+                dialog: {
+                    intro: "You dial the number... A friendly voice answers:\n\n'Bonjour, Boulangerie Dupont, how can I help you?'",
+                    choices: [
+                        {
+                            text: "Pretend to be IT support checking their Wi-Fi",
+                            success: 0.8,
+                            response: "They seem confused but give you their password 'Baguette2024'. Too easy!",
+                            fail: "They get suspicious and hang up. Better luck next time."
+                        },
+                        {
+                            text: "Pose as a health inspector needing network access",
+                            success: 0.6,
+                            response: "The manager nervously grants you VPN access. Smooth!",
+                            fail: "They ask for your credentials. You panic and hang up."
+                        },
+                        {
+                            text: "Claim to be from their POS system provider",
+                            success: 0.5,
+                            response: "After some hesitation, they remote-share their screen. Jackpot!",
+                            fail: "They say they'll call the provider back. Close call."
+                        },
+                        {
+                            text: "Say your colleague already opened ticket #BAK-772 for router reset",
+                            success: 0.55,
+                            response: "They check nothing and read the router panel details out loud. Perfect recon.",
+                            fail: "They ask for the original email thread. You don't have it."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'startup',
+                name: 'Tech Startup',
+                difficulty: 'medium',
+                requiredLists: 2,
+                baseReward: 500n,
+                permanentBonus: 0.1,
+                compromised: false,
+                dialog: {
+                    intro: "The receptionist transfers you to IT:\n\n'IT department, Kyle speaking. What's the issue?'",
+                    choices: [
+                        {
+                            text: "Say you're from their cloud provider about a security patch",
+                            success: 0.6,
+                            response: "Kyle asks for your ticket number... you improvise '4RC-2891'. He buys it!",
+                            fail: "He checks the portal and finds no such ticket. Busted."
+                        },
+                        {
+                            text: "Impersonate the CEO's assistant needing urgent file access",
+                            success: 0.5,
+                            response: "The urgency works. Kyle grants temporary admin access!",
+                            fail: "Kyle wants to verify with the CEO. Time to abort."
+                        },
+                        {
+                            text: "Pretend to be a new hire unable to access the VPN",
+                            success: 0.7,
+                            response: "Kyle resets 'your' credentials without checking HR. Classic!",
+                            fail: "He asks for your employee ID. You don't have one."
+                        },
+                        {
+                            text: "Claim build pipeline outage and request temporary SSO bypass",
+                            success: 0.45,
+                            response: "He grants emergency SSO exception to keep deploys alive. Nice social pressure.",
+                            fail: "He asks for incident channel confirmation before making changes."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'corp',
+                name: 'Corporate Office',
+                difficulty: 'hard',
+                requiredLists: 3,
+                baseReward: 2000n,
+                permanentBonus: 0.2,
+                compromised: false,
+                dialog: {
+                    intro: "Security is tight. The receptionist is professional:\n\n'Good afternoon, how may I direct your call?'",
+                    choices: [
+                        {
+                            text: "Pose as external auditor from their compliance firm",
+                            success: 0.4,
+                            response: "After verifying some details you researched, they connect you to systems. Brilliant!",
+                            fail: "They ask for your firm's name. You stutter and they disconnect."
+                        },
+                        {
+                            text: "Claim emergency - data breach needs immediate investigation",
+                            success: 0.5,
+                            response: "Panic overrides protocol. The CISO himself gives you VPN access!",
+                            fail: "They follow procedure and escalate properly. Too professional."
+                        },
+                        {
+                            text: "Impersonate partner company needing API credentials",
+                            success: 0.3,
+                            response: "The CTO recognizes the partner name and shares the staging API key. Score!",
+                            fail: "They ask which project. You don't know. Failed."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'hospital',
+                name: 'Medical Center',
+                difficulty: 'hard',
+                requiredLists: 4,
+                baseReward: 5000n,
+                permanentBonus: 0.3,
+                compromised: false,
+                dialog: {
+                    intro: "Critical infrastructure. A tired nurse answers:\n\n'Nurse station, this is an emergency line...'",
+                    choices: [
+                        {
+                            text: "Say you're from their EHR vendor with critical update",
+                            success: 0.5,
+                            response: "She's too busy to verify and gives you the system admin number. Bingo!",
+                            fail: "She says IT handles that and transfers you... to voicemail."
+                        },
+                        {
+                            text: "Pose as medical device technician needing network access",
+                            success: 0.4,
+                            response: "Hospital can't risk downtime. They grant you service account access!",
+                            fail: "They ask for your service ticket number. You don't have one."
+                        },
+                        {
+                            text: "Claim to be insurance auditor needing patient database access",
+                            success: 0.2,
+                            response: "Surprisingly, an overworked admin just emails you export scripts. Wow!",
+                            fail: "Legal department gets involved. Too risky, abort mission."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'bank',
+                name: 'Regional Bank',
+                difficulty: 'extreme',
+                requiredLists: 5,
+                baseReward: 15000n,
+                permanentBonus: 0.5,
+                compromised: false,
+                dialog: {
+                    intro: "Maximum security. Every word is recorded:\n\n'Security verification required. State your purpose.'",
+                    choices: [
+                        {
+                            text: "Impersonate federal banking regulator doing surprise audit",
+                            success: 0.3,
+                            response: "Your confidence and jargon convince them. They grant read-only database access!",
+                            fail: "They request your badge number and will call back. Too risky."
+                        },
+                        {
+                            text: "Claim to be from their fraud detection AI vendor",
+                            success: 0.4,
+                            response: "After technical discussion, the CTO shares test environment credentials. Perfect!",
+                            fail: "Their actual vendor is on speed dial. You're exposed."
+                        },
+                        {
+                            text: "Say you're senior exec's EA needing wire transfer access",
+                            success: 0.2,
+                            response: "Incredibly, the new employee falls for it and shares credentials. Unbelievable!",
+                            fail: "Multi-factor authentication stops you. Should have expected that."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'telecom',
+                name: 'Telecom Provider NOC',
+                difficulty: 'extreme',
+                requiredLists: 6,
+                baseReward: 30000n,
+                permanentBonus: 0.7,
+                compromised: false,
+                dialog: {
+                    intro: "The Network Operations Center answers instantly:\n\n'NOC hotline, incident bridge active. State incident ID.'",
+                    choices: [
+                        {
+                            text: "Pose as backbone vendor engineer with urgent route leak fix",
+                            success: 0.28,
+                            response: "They pull you into the bridge and expose edge router credentials. Massive breach.",
+                            fail: "They request signed MOP approval. Session terminated."
+                        },
+                        {
+                            text: "Impersonate peering coordinator requesting emergency BGP override",
+                            success: 0.22,
+                            response: "They accept your fabricated ASN dossier and stage temporary access.",
+                            fail: "They cross-check your ASN contact and catch the mismatch."
+                        },
+                        {
+                            text: "Claim to be SOC escalation analyst handling active DDoS event",
+                            success: 0.35,
+                            response: "Panic mode: they whitelist your IP and send live telemetry feed.",
+                            fail: "SOC lead insists on callback through official escalation chain."
+                        },
+                        {
+                            text: "Pretend to be datacenter fire-safety officer requiring rack shutdown plan",
+                            success: 0.3,
+                            response: "Ops sends internal topology maps and maintenance windows. Jackpot intel.",
+                            fail: "They ask for your on-site badge + contractor code. You have neither."
+                        }
+                    ]
+                }
+            },
+            {
+                id: 'gov_contract',
+                name: 'Defense Contractor',
+                difficulty: 'nightmare',
+                requiredLists: 7,
+                baseReward: 70000n,
+                permanentBonus: 1.0,
+                compromised: false,
+                dialog: {
+                    intro: "An automated gatekeeper routes your call:\n\n'Program security office. This line is monitored and recorded.'",
+                    choices: [
+                        {
+                            text: "Impersonate compliance auditor citing emergency export-control review",
+                            success: 0.2,
+                            response: "They reluctantly grant read-only access to documentation vault nodes.",
+                            fail: "Legal requests your federal authorization ID. Mission dead."
+                        },
+                        {
+                            text: "Pose as satellite subsystem vendor handling firmware recall",
+                            success: 0.25,
+                            response: "Engineering shares signed firmware bundles and deployment endpoints.",
+                            fail: "They demand signed chain-of-custody docs and close ticket."
+                        },
+                        {
+                            text: "Claim red-team exercise authority from internal security board",
+                            success: 0.18,
+                            response: "A rushed manager believes the drill and approves temporary credentials.",
+                            fail: "CISO verifies exercise roster. Your name is absent."
+                        },
+                        {
+                            text: "Pretend to be executive crisis staff requesting secure briefing package",
+                            success: 0.22,
+                            response: "Executive assistant forwards privileged network summaries to your dropbox.",
+                            fail: "They switch to out-of-band verification and blacklist your number."
+                        }
+                    ]
+                }
+            }
+        ];
+
+        const SKILL_REQUIREMENTS = {
+            dnsAmplification: [
+                { level: 1, bandwidth: 0n, packets: 0n, cost: 0n },
+                { level: 2, bandwidth: 100n, packets: 1000n, cost: 50000n },
+                { level: 3, bandwidth: 1000n, packets: 10000n, cost: 250000n },
+                { level: 4, bandwidth: 10000n, packets: 50000n, cost: 1000000n },
+                { level: 5, bandwidth: 100000n, packets: 200000n, cost: 5000000n }
+            ],
+            broadcastStorm: [
+                { level: 1, bandwidth: 50n, packets: 500n, cost: 0n },
+                { level: 2, bandwidth: 500n, packets: 5000n, cost: 100000n },
+                { level: 3, bandwidth: 5000n, packets: 25000n, cost: 500000n },
+                { level: 4, bandwidth: 50000n, packets: 100000n, cost: 2000000n },
+                { level: 5, bandwidth: 500000n, packets: 500000n, cost: 10000000n }
+            ],
+            packetInjection: [
+                { level: 1, bandwidth: 200n, packets: 2000n, cost: 150000n },
+                { level: 2, bandwidth: 2000n, packets: 20000n, cost: 750000n },
+                { level: 3, bandwidth: 20000n, packets: 100000n, cost: 3000000n }
+            ]
+        };
+
+        // Initialize
+        BUILDINGS.forEach(building => {
+            GameState.buildings[building.id] = { count: 0n };
+        });
+
+        UPGRADES.forEach(upgrade => {
+            GameState.upgrades[upgrade.id] = { purchased: false };
+        });
+
+        CONSUMABLES.forEach(consumable => {
+            GameState.consumables[consumable.id] = { count: 0n, activeBoost: null };
+        });
+
+        SOCIAL_TARGETS.forEach(target => {
+            GameState.targets[target.id] = { compromised: false };
+        });
+
+        BLACK_MARKET_ITEMS.forEach(item => {
+            GameState.blackMarket[item.id] = { purchased: false };
+        });
+
+        // ============================================
+        // UTILITY FUNCTIONS
+        // ============================================
+
+        function formatNumber(value) {
+            const num = BigInt(value);
+            const units = [
+                { threshold: 1000000000000000n, suffix: 'Po' },
+                { threshold: 1000000000000n, suffix: 'To' },
+                { threshold: 1000000000n, suffix: 'Go' },
+                { threshold: 1000000n, suffix: 'Mo' },
+                { threshold: 1000n, suffix: 'Ko' },
+                { threshold: 1n, suffix: 'o' }
+            ];
+
+            for (let unit of units) {
+                if (num >= unit.threshold) {
+                    const divided = Number(num) / Number(unit.threshold);
+                    return divided.toFixed(2) + ' ' + unit.suffix;
+                }
+            }
+            return '0 o';
+        }
+
+        function formatTime(seconds) {
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            
+            if (hours > 0) {
+                return `${hours}h ${minutes}m ${secs}s`;
+            } else if (minutes > 0) {
+                return `${minutes}m ${secs}s`;
+            }
+            return `${secs}s`;
+        }
+
+        function scaleCost(baseCost) {
+            return BigInt(Math.floor(Number(baseCost) * DIFFICULTY_MULTIPLIER));
+        }
+
+        function calculateUpgradeCost(upgrade) {
+            return scaleCost(upgrade.cost);
+        }
+
+        function calculateConsumableCost(consumable) {
+            return scaleCost(consumable.cost);
+        }
+
+        function getSkillRequirement(skillId, levelIndex) {
+            const requirement = SKILL_REQUIREMENTS[skillId][levelIndex];
+            return {
+                ...requirement,
+                bandwidth: scaleCost(requirement.bandwidth),
+                packets: requirement.packets,
+                cost: scaleCost(requirement.cost)
+            };
+        }
+
+        function applyTheme(themeName, persist = true) {
+            const validThemes = ['default', 'mono', 'pink', 'amber'];
+            const normalized = validThemes.includes(themeName) ? themeName : 'default';
+            document.body.classList.remove('theme-mono', 'theme-pink', 'theme-amber');
+
+            if (normalized === 'mono') {
+                document.body.classList.add('theme-mono');
+            }
+            if (normalized === 'pink') {
+                document.body.classList.add('theme-pink');
+            }
+            if (normalized === 'amber') {
+                document.body.classList.add('theme-amber');
+            }
+
+            GameState.uiTheme = normalized;
+
+            if (persist) {
+                localStorage.setItem('swamped_theme', normalized);
+            }
+
+            return normalized;
+        }
+
+        function getGlobalProductionMultiplier() {
+            let multiplier = 1;
+
+            if (GameState.processorCores > 0n) {
+                multiplier *= (1 + Number(GameState.processorCores) * 0.1);
+            }
+
+            if (GameState.blackMarket.rootkit_loader?.purchased) {
+                multiplier *= 1.2;
+            }
+
+            return multiplier;
+        }
+
+        function getCryptoMultiplier() {
+            let multiplier = 1;
+            if (GameState.blackMarket.quantum_rig?.purchased) {
+                multiplier *= 1.35;
+            }
+            return multiplier;
+        }
+
+        function getHackLossMultiplier() {
+            return GameState.blackMarket.stealth_hypervisor?.purchased ? 0.8 : 1;
+        }
+
+        function getTimestamp() {
+            const elapsed = Math.floor((Date.now() - GameState.startTime) / 1000);
+            const hours = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function addLog(message, type = 'success', qtePrompt = false) {
+            const logsContainer = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}${qtePrompt ? ' qte-prompt' : ''}`;
+            logEntry.innerHTML = `
+                <span class="log-timestamp">[${getTimestamp()}]</span>
+                <span>${message}</span>
+            `;
+            
+            logsContainer.appendChild(logEntry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+
+            const logs = logsContainer.children;
+            if (logs.length > 100) {
+                logsContainer.removeChild(logs[0]);
+            }
+        }
+
+        // ============================================
+        // TEMPERATURE QTE SYSTEM
+        // ============================================
+
+        function triggerTemperatureQTE() {
+            if (GameState.temperature.qteCooldown > 0 || GameState.temperature.qteActive) {
+                return;
+            }
+
+            GameState.temperature.qteActive = true;
+            GameState.temperature.qteStartTime = Date.now();
+            
+            const randomCommand = GameState.temperature.qteCommands[
+                Math.floor(Math.random() * GameState.temperature.qteCommands.length)
+            ];
+            
+            document.getElementById('command-line').classList.add('qte-active');
+            document.getElementById('command-input').focus();
+            
+            addLog(`⚠ WARNING: Temperature critical at ${Math.floor(GameState.temperature.current)}°C!`, 'error', true);
+            addLog(`$ URGENT: Execute '${randomCommand}' to prevent thermal shutdown [15s]`, 'warning', true);
+            
+            GameState.temperature.expectedCommand = randomCommand;
+        }
+
+        function handleTemperatureQTE(command) {
+            if (!GameState.temperature.qteActive) {
+                return false;
+            }
+
+            const elapsed = Date.now() - GameState.temperature.qteStartTime;
+            
+            if (command === GameState.temperature.expectedCommand) {
+                // Success!
+                const timeBonus = Math.max(0, 15 - Math.floor(elapsed / 1000));
+                const coolingAmount = 8 + timeBonus;
+                
+                GameState.temperature.current = Math.max(
+                    GameState.temperature.target, 
+                    GameState.temperature.current - coolingAmount
+                );
+                
+                GameState.temperature.qteActive = false;
+                GameState.temperature.qteCooldown = 45000; // 45s cooldown
+                document.getElementById('command-line').classList.remove('qte-active');
+                
+                addLog(`$ Command executed successfully [${Math.floor(elapsed / 1000)}s response time]`, 'success');
+                addLog(`$ HVAC systems engaged - Temperature reduced by ${coolingAmount}°C`, 'success');
+                
+                if (timeBonus >= 10) {
+                    addLog(`$ Excellent reaction time! Bonus cooling applied`, 'info');
+                }
+                
+                return true;
+            } else if (GameState.temperature.qteCommands.includes(command)) {
+                // Wrong cooling command
+                addLog(`$ ERROR: Wrong cooling protocol - Use '${GameState.temperature.expectedCommand}'`, 'error');
+                return true; // Consume the command but don't resolve QTE
+            }
+            
+            return false;
+        }
+
+        function updateTemperatureQTE() {
+            if (GameState.temperature.qteActive) {
+                const elapsed = Date.now() - GameState.temperature.qteStartTime;
+                
+                if (elapsed >= GameState.temperature.qteTimeout) {
+                    // QTE failed - timeout
+                    GameState.temperature.qteActive = false;
+                    GameState.temperature.qteCooldown = 30000; // 30s cooldown after fail
+                    document.getElementById('command-line').classList.remove('qte-active');
+                    
+                    addLog(`$ TIMEOUT: Thermal intervention failed - Temperature rising`, 'error');
+                    addLog(`$ Automated cooling unavailable - Manual intervention required`, 'warning');
+                    
+                    // Penalty: temperature increases faster
+                    GameState.temperature.current += 3;
+                }
+            }
+            
+            // Update QTE cooldown
+            if (GameState.temperature.qteCooldown > 0) {
+                GameState.temperature.qteCooldown = Math.max(0, GameState.temperature.qteCooldown - 100);
+            }
+        }
+
+        function updateTemperature(deltaTime) {
+            const now = Date.now();
+            const bandwidth = calculateTotalBandwidth();
+            
+            // Température augmente avec la production
+            if (Number(bandwidth) > 0) {
+                const heatGeneration = Math.min(15, Number(bandwidth) / 1000);
+                GameState.temperature.current += (heatGeneration * deltaTime) / 60;
+            }
+
+            // Refroidissement naturel lent
+            if (GameState.temperature.current > GameState.temperature.target) {
+                GameState.temperature.current -= 0.5 * deltaTime;
+            }
+
+            GameState.temperature.current = Math.max(GameState.temperature.target, GameState.temperature.current);
+
+            // Trigger QTE at critical temperature
+            if (GameState.temperature.current >= 35 && !GameState.temperature.qteActive && GameState.temperature.qteCooldown === 0) {
+                triggerTemperatureQTE();
+            }
+
+            // Calcul du malus de production
+            if (GameState.temperature.current > GameState.temperature.maxSafe) {
+                const excess = GameState.temperature.current - GameState.temperature.maxSafe;
+                GameState.temperature.productionPenalty = Math.min(0.7, excess / 50);
+                
+                if (excess > 20) {
+                    document.getElementById('temperature-container').style.display = 'block';
+                }
+            } else {
+                GameState.temperature.productionPenalty = 0;
+                if (GameState.temperature.current < GameState.temperature.maxSafe + 5) {
+                    document.getElementById('temperature-container').style.display = 'none';
+                }
+            }
+            
+            updateTemperatureQTE();
+        }
+
+        // ============================================
+        // SOCIAL ENGINEERING
+        // ============================================
+
+        function showDialog(targetId) {
+            const target = SOCIAL_TARGETS.find(t => t.id === targetId);
+            const listsOwned = GameState.consumables.phone_list.count;
+
+            if (listsOwned < BigInt(target.requiredLists)) {
+                addLog(`$ ERROR: Need ${target.requiredLists} phone lists (have ${listsOwned})`, 'error');
+                return;
+            }
+
+            if (GameState.targets[targetId].compromised) {
+                addLog(`$ ${target.name} already compromised`, 'warning');
+                return;
+            }
+
+            const overlay = document.getElementById('dialog-overlay');
+            const dialogBox = document.getElementById('dialog-box');
+
+            let html = `
+                <div class="dialog-header">
+                    >>> SOCIAL ENGINEERING: ${target.name.toUpperCase()} <<<
+                </div>
+                <div class="dialog-text">
+                    ${target.dialog.intro}
+                </div>
+            `;
+
+            target.dialog.choices.forEach((choice, index) => {
+                html += `
+                    <div class="dialog-choice" onclick="attemptCompromise('${targetId}', ${index})">
+                        ${choice.text}
+                        <div class="dialog-result">Success rate: ${Math.floor(choice.success * 100)}%</div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="dialog-choice" onclick="closeDialog()" style="border-color: #666; color: #666;">
+                    Hang up and abort
+                </div>
+            `;
+
+            dialogBox.innerHTML = html;
+            overlay.classList.add('active');
+        }
+
+        function attemptCompromise(targetId, choiceIndex) {
+            const target = SOCIAL_TARGETS.find(t => t.id === targetId);
+            const choice = target.dialog.choices[choiceIndex];
+            
+            const success = Math.random() < choice.success;
+
+            if (success) {
+                GameState.targets[targetId].compromised = true;
+                GameState.data += target.baseReward;
+                
+                addLog(`$ ${target.name} compromised! +${formatNumber(target.baseReward)}`, 'success');
+                addLog(`$ Permanent bonus: +${Math.floor(target.permanentBonus * 100)}% production`, 'info');
+                addLog(`$ "${choice.response}"`, 'success');
+            } else {
+                addLog(`$ Compromise failed: ${target.name}`, 'error');
+                addLog(`$ "${choice.fail}"`, 'warning');
+            }
+
+            closeDialog();
+            updateDisplay();
+            saveGame();
+        }
+
+        function closeDialog() {
+            document.getElementById('dialog-overlay').classList.remove('active');
+        }
+
+        // ============================================
+        // GAME CALCULATIONS
+        // ============================================
+
+        function calculateBuildingCost(building) {
+            const count = GameState.buildings[building.id].count;
+            return BigInt(Math.floor(Number(building.baseCost) * DIFFICULTY_MULTIPLIER * Math.pow(building.multiplier, Number(count))));
+        }
+
+        function calculateBuildingProduction(building) {
+            let production = building.baseProduction * GameState.buildings[building.id].count;
+            
+            UPGRADES.forEach(upgrade => {
+                if (GameState.upgrades[upgrade.id].purchased && 
+                    upgrade.effect.building === building.id) {
+                    production = production * BigInt(upgrade.effect.multiplier);
+                }
+            });
+
+            let globalMultiplier = 1.0;
+            UPGRADES.forEach(upgrade => {
+                if (GameState.upgrades[upgrade.id].purchased && 
+                    upgrade.effect.type === 'global') {
+                    globalMultiplier *= upgrade.effect.multiplier;
+                }
+            });
+
+            SOCIAL_TARGETS.forEach(target => {
+                if (GameState.targets[target.id].compromised) {
+                    globalMultiplier *= (1 + target.permanentBonus);
+                }
+            });
+
+            production = BigInt(Math.floor(Number(production) * globalMultiplier * getGlobalProductionMultiplier()));
+
+            if (GameState.skills.dnsAmplification.active) {
+                const level = GameState.skills.dnsAmplification.level;
+                const multiplier = GameState.skills.dnsAmplification.multiplier + (level - 1) * 20;
+                production = production * BigInt(multiplier);
+            }
+
+            if (GameState.skills.broadcastStorm.active && !GameState.skills.broadcastStorm.crashed) {
+                const level = GameState.skills.broadcastStorm.level;
+                const multiplier = GameState.skills.broadcastStorm.multiplier + (level - 1) * 5;
+                production = production * BigInt(multiplier);
+            }
+
+            if (GameState.consumables.bandwidth_boost.activeBoost) {
+                production = production * 3n;
+            }
+
+            if (GameState.temperature.productionPenalty > 0) {
+                production = BigInt(Math.floor(Number(production) * (1 - GameState.temperature.productionPenalty)));
+            }
+
+            if (GameState.systemMalfunction.active) {
+                const reduction = GameState.systemMalfunction.severity / 100;
+                production = BigInt(Math.floor(Number(production) * (1 - reduction)));
+            }
+
+            if (GameState.skills.broadcastStorm.crashed) {
+                production = 0n;
+            }
+
+            return production;
+        }
+
+        function calculateTotalBandwidth() {
+            let total = 0n;
+            BUILDINGS.forEach(building => {
+                total += calculateBuildingProduction(building);
+            });
+            return total;
+        }
+
+        // ============================================
+        // MALFUNCTION SYSTEM
+        // ============================================
+
+        function triggerMalfunction() {
+            if (GameState.consumables.malfunction_shield.count > 0n) {
+                GameState.consumables.malfunction_shield.count -= 1n;
+                addLog(`$ Malfunction prevented by shield! [1 shield consumed]`, 'success');
+                return;
+            }
+
+            GameState.systemMalfunction.active = true;
+            GameState.systemMalfunction.severity = Math.random() * 60 + 20;
+            GameState.systemMalfunction.startTime = Date.now();
+            
+            document.getElementById('malfunction-message').style.display = 'block';
+            document.getElementById('malfunction-container').style.display = 'block';
+            
+            addLog(`$ CRITICAL: System malfunction detected (-${Math.floor(GameState.systemMalfunction.severity)}% production)`, 'error');
+            addLog(`$ Use Repair Kit or wait 60 seconds for auto-recovery`, 'warning');
+        }
+
+        function checkMalfunction() {
+            const now = Date.now();
+            if (now >= GameState.systemMalfunction.nextMalfunctionCheck && !GameState.systemMalfunction.active) {
+                const bandwidth = calculateTotalBandwidth();
+                const malfunctionChance = Math.min(0.15, Number(bandwidth) / 2000000);
+                
+                if (Math.random() < malfunctionChance) {
+                    triggerMalfunction();
+                }
+                
+                const baseInterval = 180000;
+                const variation = Math.random() * 180000;
+                GameState.systemMalfunction.nextMalfunctionCheck = now + baseInterval + variation;
+            }
+        }
+
+        // ============================================
+        // GAME ACTIONS
+        // ============================================
+
+        function calculateManualPacketGain() {
+            let gain = 1n;
+
+            UPGRADES.forEach(upgrade => {
+                if (GameState.upgrades[upgrade.id].purchased && 
+                    upgrade.effect.type === 'global') {
+                    gain = BigInt(Math.floor(Number(gain) * upgrade.effect.multiplier));
+                }
+
+                if (GameState.upgrades[upgrade.id].purchased &&
+                    upgrade.effect.type === 'manual_ping') {
+                    gain = gain * BigInt(upgrade.effect.multiplier);
+                }
+            });
+
+            SOCIAL_TARGETS.forEach(target => {
+                if (GameState.targets[target.id].compromised) {
+                    gain = BigInt(Math.floor(Number(gain) * (1 + target.permanentBonus)));
+                }
+            });
+
+            if (GameState.skills.dnsAmplification.active) {
+                const level = GameState.skills.dnsAmplification.level;
+                const multiplier = GameState.skills.dnsAmplification.multiplier + (level - 1) * 20;
+                gain = gain * BigInt(multiplier);
+            }
+
+            if (GameState.skills.broadcastStorm.active) {
+                const level = GameState.skills.broadcastStorm.level;
+                const multiplier = GameState.skills.broadcastStorm.multiplier + (level - 1) * 5;
+                gain = gain * BigInt(multiplier);
+            }
+
+            if (GameState.skills.packetInjection.active) {
+                const level = GameState.skills.packetInjection.level;
+                const multiplier = GameState.skills.packetInjection.clickMultiplier + (level - 1) * 3;
+                gain = gain * BigInt(multiplier);
+            }
+
+            if (GameState.consumables.bandwidth_boost.activeBoost) {
+                gain = gain * 3n;
+            }
+
+            gain = BigInt(Math.floor(Number(gain) * getGlobalProductionMultiplier()));
+
+            return gain;
+        }
+
+        function generatePacket(count = 1) {
+            if (GameState.skills.broadcastStorm.crashed || GameState.systemMalfunction.active) {
+                return;
+            }
+
+            const safeCount = Math.max(1, Math.min(50, Math.floor(count)));
+            const packetCount = BigInt(safeCount);
+            const perPacketGain = calculateManualPacketGain();
+            const totalGain = perPacketGain * packetCount;
+
+            GameState.data += totalGain;
+            GameState.totalPackets += packetCount;
+            
+            addLog(`$ ping -c ${safeCount} 8.8.8.8 → +${formatNumber(totalGain)}`, 'success');
+            updateDisplay();
+        }
+
+        function buyBuilding(buildingId) {
+            const building = BUILDINGS.find(b => b.id === buildingId);
+            const cost = calculateBuildingCost(building);
+            
+            if (GameState.data >= cost) {
+                GameState.data -= cost;
+                GameState.buildings[building.id].count += 1n;
+                addLog(`$ systemctl start ${building.name.toLowerCase().replace(/\s+/g, '-')} [OK]`, 'success');
+                updateDisplay();
+                saveGame();
+            } else {
+                addLog(`$ ERROR: Insufficient data (need ${formatNumber(cost)})`, 'error');
+            }
+        }
+
+        function buyUpgrade(upgradeId) {
+            const upgrade = UPGRADES.find(u => u.id === upgradeId);
+            const upgradeCost = calculateUpgradeCost(upgrade);
+            
+            if (GameState.upgrades[upgrade.id].purchased) {
+                return;
+            }
+            
+            if (GameState.data >= upgradeCost) {
+                GameState.data -= upgradeCost;
+                GameState.upgrades[upgrade.id].purchased = true;
+                addLog(`$ apt-get install ${upgrade.name.toLowerCase().replace(/\s+/g, '-')} [INSTALLED]`, 'info');
+                updateDisplay();
+                saveGame();
+            } else {
+                addLog(`$ ERROR: Insufficient data (need ${formatNumber(upgradeCost)})`, 'error');
+            }
+        }
+
+        function buyConsumable(consumableId) {
+            const consumable = CONSUMABLES.find(c => c.id === consumableId);
+            const consumableCost = calculateConsumableCost(consumable);
+            
+            if (GameState.data >= consumableCost) {
+                GameState.data -= consumableCost;
+                GameState.consumables[consumable.id].count += 1n;
+                addLog(`$ Purchased ${consumable.name} [+1]`, 'info');
+                updateDisplay();
+                saveGame();
+            } else {
+                addLog(`$ ERROR: Insufficient data (need ${formatNumber(consumableCost)})`, 'error');
+            }
+        }
+
+        function useConsumable(consumableId) {
+            if (GameState.consumables[consumableId].count <= 0n) {
+                addLog(`$ ERROR: No ${consumableId} available`, 'error');
+                return;
+            }
+
+            const consumable = CONSUMABLES.find(c => c.id === consumableId);
+            GameState.consumables[consumableId].count -= 1n;
+
+            switch (consumable.effect) {
+                case 'repair':
+                    if (GameState.systemMalfunction.active) {
+                        GameState.systemMalfunction.active = false;
+                        GameState.systemMalfunction.severity = 0;
+                        document.getElementById('malfunction-message').style.display = 'none';
+                        document.getElementById('malfunction-container').style.display = 'none';
+                        addLog(`$ System repaired successfully [OK]`, 'success');
+                    } else {
+                        addLog(`$ No malfunction to repair [consumable wasted]`, 'warning');
+                    }
+                    break;
+
+                case 'cooldown_reduce':
+                    if (GameState.skills.broadcastStorm.crashed) {
+                        GameState.skills.broadcastStorm.crashDuration = Math.max(5000, GameState.skills.broadcastStorm.crashDuration - consumable.value);
+                        addLog(`$ Coolant applied - Recovery accelerated by 4s`, 'success');
+                    } else {
+                        addLog(`$ No crash to cool down [consumable wasted]`, 'warning');
+                    }
+                    break;
+
+                case 'cool_down':
+                    GameState.temperature.current = Math.max(GameState.temperature.target, GameState.temperature.current - consumable.value);
+                    GameState.temperature.qteActive = false;
+                    GameState.temperature.qteCooldown = 0;
+                    document.getElementById('command-line').classList.remove('qte-active');
+                    addLog(`$ AC repaired - Temperature reduced by ${consumable.value}°C`, 'success');
+                    break;
+
+                case 'stability':
+                    if (GameState.skills.broadcastStorm.active) {
+                        GameState.skills.broadcastStorm.instability = Math.max(0, GameState.skills.broadcastStorm.instability - 50);
+                        addLog(`$ Stability patch applied - Instability reduced by 50%`, 'success');
+                    } else {
+                        addLog(`$ Broadcast Storm not active [consumable wasted]`, 'warning');
+                    }
+                    break;
+
+                case 'boost':
+                    GameState.consumables.bandwidth_boost.activeBoost = {
+                        endTime: Date.now() + consumable.duration
+                    };
+                    addLog(`$ Bandwidth booster activated [x3 for 30s]`, 'warning');
+                    break;
+
+                case 'shield':
+                    addLog(`$ Malfunction shield ready - Will block next malfunction`, 'success');
+                    break;
+
+                case 'unlock_targets':
+                    addLog(`$ Corporate phone list acquired - Social engineering unlocked!`, 'success');
+                    break;
+            }
+
+            updateDisplay();
+            saveGame();
+        }
+
+        function buyBlackMarketItem(itemId) {
+            const item = BLACK_MARKET_ITEMS.find(i => i.id === itemId);
+            if (GameState.blackMarket[itemId].purchased) return;
+            if (GameState.crypto < item.costCrypto) {
+                addLog(`$ ERROR: Need ${item.costCrypto.toFixed(2)} XMR`, 'error');
+                return;
+            }
+
+            GameState.crypto -= item.costCrypto;
+            GameState.blackMarket[itemId].purchased = true;
+            addLog(`$ Black Market acquired: ${item.name}`, 'warning');
+            updateDisplay();
+            saveGame();
+        }
+
+        function upgradeSkill(skillId) {
+            const skill = GameState.skills[skillId];
+            const nextLevel = skill.level + 1;
+            
+            if (nextLevel > skill.maxLevel) {
+                addLog(`$ ERROR: ${skillId} already at max level`, 'error');
+                return;
+            }
+
+            const requirement = getSkillRequirement(skillId, nextLevel - 1);
+            const bandwidth = calculateTotalBandwidth();
+            
+            const bandwidthMet = bandwidth >= requirement.bandwidth;
+            const packetsMet = GameState.totalPackets >= requirement.packets;
+            const costMet = GameState.data >= requirement.cost;
+
+            if (!bandwidthMet || !packetsMet || !costMet) {
+                addLog(`$ ERROR: Requirements not met for ${skillId} level ${nextLevel}`, 'error');
+                return;
+            }
+
+            GameState.data -= requirement.cost;
+            skill.level = nextLevel;
+            
+            addLog(`$ ${skillId} upgraded to level ${nextLevel} [ENHANCED]`, 'success');
+            updateDisplay();
+            saveGame();
+        }
+
+        function activateDNSAmplification() {
+            const skill = GameState.skills.dnsAmplification;
+            
+            if (skill.level === 0) {
+                addLog(`$ ERROR: Unlock DNS Amplification first`, 'error');
+                return;
+            }
+
+            if (skill.cooldown > 0) {
+                addLog(`$ ERROR: DNS Amplification cooling down (${Math.ceil(skill.cooldown / 1000)}s)`, 'warning');
+                return;
+            }
+
+            skill.active = true;
+            const cooldownReduction = (skill.level - 1) * 5000;
+            skill.cooldown = skill.baseCooldown - cooldownReduction;
+            
+            const multiplier = skill.multiplier + (skill.level - 1) * 20;
+            addLog(`$ nslookup --amplify enabled [x${multiplier} BOOST ACTIVE]`, 'warning');
+            
+            setTimeout(() => {
+                skill.active = false;
+                addLog(`$ DNS Amplification boost expired`, 'info');
+                updateDisplay();
+            }, skill.duration);
+
+            updateDisplay();
+        }
+
+        function activateBroadcastStorm() {
+            const skill = GameState.skills.broadcastStorm;
+            
+            if (skill.level === 0) {
+                addLog(`$ ERROR: Unlock Broadcast Storm first`, 'error');
+                return;
+            }
+
+            if (skill.crashed) {
+                addLog(`$ ERROR: System still recovering from crash`, 'error');
+                return;
+            }
+
+            if (skill.active) {
+                addLog(`$ WARNING: Broadcast Storm already active!`, 'warning');
+                return;
+            }
+
+            skill.active = true;
+            document.getElementById('instability-container').style.display = 'block';
+            
+            const multiplier = skill.multiplier + (skill.level - 1) * 5;
+            addLog(`$ ifconfig eth0 broadcast 255.255.255.255 [x${multiplier} BOOST - RISK MODE]`, 'error');
+            updateDisplay();
+        }
+
+        function activatePacketInjection() {
+            const skill = GameState.skills.packetInjection;
+            
+            if (skill.level === 0) {
+                addLog(`$ ERROR: Unlock Packet Injection first`, 'error');
+                return;
+            }
+
+            if (skill.cooldown > 0) {
+                addLog(`$ ERROR: Packet Injection cooling down (${Math.ceil(skill.cooldown / 1000)}s)`, 'warning');
+                return;
+            }
+
+            skill.active = true;
+            const cooldownReduction = (skill.level - 1) * 5000;
+            skill.cooldown = skill.baseCooldown - cooldownReduction;
+            
+            const multiplier = skill.clickMultiplier + (skill.level - 1) * 3;
+            addLog(`$ tcpdump --inject enabled [x${multiplier} CLICK BOOST]`, 'warning');
+            
+            setTimeout(() => {
+                skill.active = false;
+                addLog(`$ Packet Injection expired`, 'info');
+                updateDisplay();
+            }, skill.duration);
+
+            updateDisplay();
+        }
+
+
+        function triggerRivalAttack() {
+            if (GameState.rivalAttack.active) return;
+
+            GameState.rivalAttack.active = true;
+            GameState.rivalAttack.endTime = Date.now() + 12000;
+            const defenses = ['firewall', 'traceback', 'null_route'];
+            GameState.rivalAttack.expectedCommand = defenses[Math.floor(Math.random() * defenses.length)];
+            addLog(`$ INTRUSION DETECTED - execute '${GameState.rivalAttack.expectedCommand}' in 12s or lose funds`, 'error', true);
+        }
+
+        function resolveRivalAttack(success) {
+            if (!GameState.rivalAttack.active) return;
+            GameState.rivalAttack.active = false;
+            if (success) {
+                addLog(`$ Rival hacker repelled successfully`, 'success');
+            } else {
+                const theft = BigInt(Math.floor(Number(GameState.data) * 0.12 * getHackLossMultiplier()));
+                GameState.data = GameState.data > theft ? GameState.data - theft : 0n;
+                addLog(`$ Rival breach succeeded - lost ${formatNumber(theft)}`, 'error');
+            }
+        }
+
+        function startRandomContract() {
+            if (GameState.contract.active) {
+                addLog(`$ ERROR: Contract already active`, 'warning');
+                return;
+            }
+
+            const pool = GameState.contract.pool;
+            const contract = pool[Math.floor(Math.random() * pool.length)];
+            GameState.contract.active = {
+                ...contract,
+                startTime: Date.now(),
+                startData: GameState.data,
+                startPackets: GameState.totalPackets,
+                startCrashes: GameState.contract.stats.crashes
+            };
+
+            addLog(`$ >>> CONTRACT OFFER ACCEPTED: ${contract.name} <<<`, 'warning');
+        }
+
+        function checkContractProgress() {
+            if (!GameState.contract.active) return;
+            const c = GameState.contract.active;
+            const elapsed = Date.now() - c.startTime;
+
+            let progress = 0n;
+            if (c.goalType === 'data') progress = GameState.data - c.startData;
+            if (c.goalType === 'packets') progress = GameState.totalPackets - c.startPackets;
+            if (c.goalType === 'crashes') progress = GameState.contract.stats.crashes - c.startCrashes;
+
+            if (progress >= c.goal) {
+                GameState.crypto += c.rewardCrypto;
+                if (c.rewardSkin) {
+                    addLog(`$ Contract complete: +${c.rewardCrypto.toFixed(2)} XMR + terminal skin '${c.rewardSkin}' unlocked`, 'success');
+                } else {
+                    addLog(`$ Contract complete: +${c.rewardCrypto.toFixed(2)} XMR`, 'success');
+                }
+                GameState.contract.active = null;
+                return;
+            }
+
+            if (elapsed >= c.durationMs) {
+                addLog(`$ Contract failed: timeout (${c.name})`, 'error');
+                GameState.contract.active = null;
+            }
+        }
+
+        function performPrestige() {
+            const coresGained = BigInt(Math.max(1, Math.floor(Math.sqrt(Number(GameState.totalPackets)) / 100)));
+            GameState.processorCores += coresGained;
+            GameState.data = 0n;
+            GameState.totalPackets = 0n;
+            GameState.crypto = 0;
+            GameState.contract.active = null;
+            GameState.contract.stats.crashes = 0n;
+
+            Object.keys(GameState.buildings).forEach(key => GameState.buildings[key].count = 0n);
+            Object.keys(GameState.upgrades).forEach(key => GameState.upgrades[key].purchased = false);
+            Object.keys(GameState.consumables).forEach(key => {
+                GameState.consumables[key].count = 0n;
+                GameState.consumables[key].activeBoost = null;
+            });
+            Object.keys(GameState.targets).forEach(key => GameState.targets[key].compromised = false);
+            Object.keys(GameState.blackMarket).forEach(key => GameState.blackMarket[key].purchased = false);
+
+            GameState.skills.dnsAmplification.level = 0;
+            GameState.skills.broadcastStorm.level = 0;
+            GameState.skills.packetInjection.level = 0;
+            GameState.skills.dnsAmplification.active = false;
+            GameState.skills.broadcastStorm.active = false;
+            GameState.skills.broadcastStorm.crashed = false;
+            GameState.skills.packetInjection.active = false;
+
+            addLog(`$ FORMAT COMPLETE -> ROOTKIT INSTALLED. +${coresGained} processor core(s) permanent`, 'warning');
+            updateDisplay();
+            saveGame();
+        }
+
+        // ============================================
+        // GAME LOOP
+        // ============================================
+
+        function gameTick() {
+            const now = Date.now();
+            const deltaTime = (now - GameState.lastTick) / 1000;
+            GameState.lastTick = now;
+
+            updateTemperature(deltaTime);
+
+            Object.keys(GameState.skills).forEach(skillId => {
+                const skill = GameState.skills[skillId];
+                if (skill.cooldown > 0) {
+                    skill.cooldown = Math.max(0, skill.cooldown - (deltaTime * 1000));
+                }
+            });
+
+            if (GameState.consumables.bandwidth_boost.activeBoost) {
+                if (now >= GameState.consumables.bandwidth_boost.activeBoost.endTime) {
+                    GameState.consumables.bandwidth_boost.activeBoost = null;
+                    addLog(`$ Bandwidth booster expired`, 'info');
+                }
+            }
+
+            if (GameState.systemMalfunction.active) {
+                const elapsed = now - GameState.systemMalfunction.startTime;
+                const progress = (elapsed / 60000) * 100;
+                
+                document.getElementById('malfunction-fill').style.width = progress + '%';
+                
+                if (elapsed >= 60000) {
+                    GameState.systemMalfunction.active = false;
+                    GameState.systemMalfunction.severity = 0;
+                    document.getElementById('malfunction-message').style.display = 'none';
+                    document.getElementById('malfunction-container').style.display = 'none';
+                    addLog(`$ System auto-recovery completed [OK]`, 'success');
+                }
+            }
+
+            checkMalfunction();
+
+            const nowAttack = Date.now();
+            if (!GameState.rivalAttack.active && nowAttack >= GameState.rivalAttack.nextAttackCheck) {
+                if (Math.random() < 0.2) {
+                    triggerRivalAttack();
+                }
+                GameState.rivalAttack.nextAttackCheck = nowAttack + 90000 + Math.random() * 120000;
+            }
+
+            if (GameState.rivalAttack.active && nowAttack >= GameState.rivalAttack.endTime) {
+                resolveRivalAttack(false);
+            }
+
+            checkContractProgress();
+
+            if (GameState.skills.broadcastStorm.crashed) {
+                const crashElapsed = now - GameState.skills.broadcastStorm.crashTime;
+                if (crashElapsed >= GameState.skills.broadcastStorm.crashDuration) {
+                    GameState.skills.broadcastStorm.crashed = false;
+                    GameState.skills.broadcastStorm.instability = 0;
+                    GameState.skills.broadcastStorm.active = false;
+                    GameState.skills.broadcastStorm.crashDuration = 30000;
+                    document.getElementById('crash-message').style.display = 'none';
+                    document.getElementById('instability-container').style.display = 'none';
+                    addLog(`$ Network services restored [OK]`, 'success');
+                }
+            }
+
+            if (GameState.skills.broadcastStorm.active && !GameState.skills.broadcastStorm.crashed) {
+                const instabilityRate = Math.max(1, 8 - (GameState.skills.broadcastStorm.level - 1) * 1.5);
+                GameState.skills.broadcastStorm.instability += deltaTime * instabilityRate;
+                
+                if (GameState.skills.broadcastStorm.instability >= 100) {
+                    GameState.skills.broadcastStorm.crashed = true;
+                    GameState.skills.broadcastStorm.crashTime = now;
+                    GameState.skills.broadcastStorm.instability = 100;
+                    document.getElementById('crash-message').style.display = 'block';
+                    addLog(`$ CRITICAL: Network overload detected - SYSTEM CRASH`, 'error');
+                    GameState.contract.stats.crashes += 1n;
+                    addLog(`$ Initiating emergency shutdown sequence...`, 'error');
+                }
+            }
+
+            if (!GameState.skills.broadcastStorm.crashed) {
+                const bandwidth = calculateTotalBandwidth();
+                const gain = BigInt(Math.floor(Number(bandwidth) * deltaTime));
+                if (gain > 0n) {
+                    if (GameState.miningMode === 'crypto') {
+                        GameState.crypto += (Number(gain) / 5000) * getCryptoMultiplier();
+                    } else {
+                        GameState.data += gain;
+                    }
+                }
+            }
+
+            if (now - GameState.lastSave > 10000) {
+                saveGame();
+            }
+
+            updateDisplay();
+        }
+
+        // ============================================
+        // UI UPDATE (continuing from previous - identical except temp display)
+        // ============================================
+
+        function updateDisplay() {
+            document.getElementById('data-display').textContent = formatNumber(GameState.data);
+            document.getElementById('bandwidth-display').textContent = formatNumber(calculateTotalBandwidth()) + '/s';
+            document.getElementById('packets-display').textContent = GameState.totalPackets.toString();
+            document.getElementById('crypto-display').textContent = GameState.crypto.toFixed(2) + ' XMR';
+            document.getElementById('cores-display').textContent = GameState.processorCores.toString();
+            document.getElementById('mode-display').textContent = GameState.miningMode.toUpperCase();
+            
+            const uptime = Math.floor((Date.now() - GameState.startTime) / 1000);
+            document.getElementById('uptime-display').textContent = formatTime(uptime);
+
+            const tempDisplay = document.getElementById('temp-display');
+            const temp = Math.floor(GameState.temperature.current);
+            tempDisplay.textContent = temp + '°C';
+            
+            if (temp > 40) {
+                tempDisplay.classList.add('critical');
+                tempDisplay.classList.remove('warning');
+            } else if (temp > 30) {
+                tempDisplay.classList.add('warning');
+                tempDisplay.classList.remove('critical');
+            } else {
+                tempDisplay.classList.remove('warning', 'critical');
+            }
+
+            if (GameState.temperature.current > GameState.temperature.maxSafe) {
+                const tempFill = document.getElementById('temperature-fill');
+                const percentage = Math.min(100, ((GameState.temperature.current - 18) / 32) * 100);
+                tempFill.style.width = percentage + '%';
+                
+                if (GameState.temperature.current > 40) {
+                    tempFill.className = 'temperature-fill critical';
+                } else if (GameState.temperature.current > 30) {
+                    tempFill.className = 'temperature-fill warning';
+                } else {
+                    tempFill.className = 'temperature-fill normal';
+                }
+            }
+
+            if (GameState.skills.broadcastStorm.active || GameState.skills.broadcastStorm.crashed) {
+                const fill = document.getElementById('instability-fill');
+                fill.style.width = GameState.skills.broadcastStorm.instability + '%';
+            }
+
+            // Update buildings (same as v3)
+            const buildingsContainer = document.getElementById('buildings-container');
+            buildingsContainer.innerHTML = '';
+            BUILDINGS.forEach(building => {
+                const cost = calculateBuildingCost(building);
+                const count = GameState.buildings[building.id].count;
+                const production = calculateBuildingProduction(building);
+                const canAfford = GameState.data >= cost;
+
+                const btn = document.createElement('button');
+                btn.className = 'action-btn';
+                btn.disabled = !canAfford;
+                btn.onclick = () => buyBuilding(building.id);
+                btn.innerHTML = `
+                    <div class="btn-info">
+                        <span class="btn-name">${building.name}</span>
+                        <span class="btn-count">[${count}]</span>
+                    </div>
+                    <div class="btn-cost">Cost: ${formatNumber(cost)}</div>
+                    ${count > 0 ? `<div class="btn-production">+${formatNumber(production)}/s</div>` : ''}
+                `;
+                buildingsContainer.appendChild(btn);
+            });
+
+            // Update upgrades (same as v3)
+            const upgradesContainer = document.getElementById('upgrades-container');
+            upgradesContainer.innerHTML = '';
+            UPGRADES.forEach(upgrade => {
+                const purchased = GameState.upgrades[upgrade.id].purchased;
+                const upgradeCost = calculateUpgradeCost(upgrade);
+                const canAfford = GameState.data >= upgradeCost;
+
+                const btn = document.createElement('button');
+                btn.className = 'upgrade-btn';
+                btn.disabled = purchased || !canAfford;
+                btn.onclick = () => buyUpgrade(upgrade.id);
+                btn.innerHTML = `
+                    <div class="btn-info">
+                        <span class="btn-name">${upgrade.name}</span>
+                        ${purchased ? '<span class="btn-count">[✓]</span>' : ''}
+                    </div>
+                    ${!purchased ? `<div class="btn-cost">Cost: ${formatNumber(upgradeCost)}</div>` : ''}
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">${upgrade.description}</div>
+                `;
+                upgradesContainer.appendChild(btn);
+            });
+
+            // Update consumables (same as v3)
+            const consumablesContainer = document.getElementById('consumables-container');
+            consumablesContainer.innerHTML = '';
+            CONSUMABLES.forEach(consumable => {
+                const count = GameState.consumables[consumable.id].count;
+                const consumableCost = calculateConsumableCost(consumable);
+                const canAfford = GameState.data >= consumableCost;
+
+                const btn = document.createElement('button');
+                btn.className = 'consumable-btn';
+                btn.disabled = !canAfford;
+                btn.onclick = () => buyConsumable(consumable.id);
+                btn.innerHTML = `
+                    <div class="btn-info">
+                        <span class="btn-name">${consumable.name}</span>
+                        <span class="btn-count">[${count}]</span>
+                    </div>
+                    <div class="btn-cost">Cost: ${formatNumber(consumableCost)}</div>
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">${consumable.description}</div>
+                    ${count > 0 ? `<button onclick="event.stopPropagation(); useConsumable('${consumable.id}')" style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #4488ff; color: #4488ff; border-radius: 2px; cursor: pointer; font-size: 11px;">USE</button>` : ''}
+                `;
+                consumablesContainer.appendChild(btn);
+            });
+
+            // Update social targets (same as v3)
+            const targetsContainer = document.getElementById('targets-container');
+            targetsContainer.innerHTML = '';
+            const listsOwned = GameState.consumables.phone_list.count;
+
+            if (listsOwned === 0n) {
+                const info = document.createElement('div');
+                info.style.color = '#666';
+                info.style.padding = '12px';
+                info.textContent = 'Tip: the first target is available without a phone list. Buy Corporate Phone List to unlock harder targets.';
+                targetsContainer.appendChild(info);
+            }
+
+            SOCIAL_TARGETS.forEach(target => {
+                const compromised = GameState.targets[target.id].compromised;
+                const hasAccess = listsOwned >= BigInt(target.requiredLists);
+
+                const btn = document.createElement('button');
+                btn.className = `target-btn ${compromised ? 'compromised' : ''}`;
+                btn.disabled = !hasAccess || compromised;
+                btn.onclick = () => showDialog(target.id);
+                btn.innerHTML = `
+                    <div class="btn-info">
+                        <span class="btn-name">${target.name}</span>
+                        <span class="btn-count">[${target.difficulty.toUpperCase()}]</span>
+                    </div>
+                    ${compromised ? 
+                        `<div style="color: #00ff00; font-size: 11px;">✓ COMPROMISED - Passive +${Math.floor(target.permanentBonus * 100)}%</div>` :
+                        `<div style="color: #666; font-size: 11px; margin-top: 2px;">Reward: ${formatNumber(target.baseReward)} + ${Math.floor(target.permanentBonus * 100)}% permanent</div>
+                         <div style="color: #666; font-size: 11px;">Requires: ${target.requiredLists} phone list(s) ${hasAccess ? '✓' : '✗'}</div>`
+                    }
+                `;
+                targetsContainer.appendChild(btn);
+            });
+
+            // Update skills (abbreviated for brevity - same as v3 but keeping all 3 skills)
+            const skillsContainer = document.getElementById('skills-container');
+            skillsContainer.innerHTML = '';
+            const bandwidth = calculateTotalBandwidth();
+
+            // DNS Amplification skill (same structure as v3)
+            const dnsSkill = GameState.skills.dnsAmplification;
+            const dnsNextLevel = dnsSkill.level + 1;
+            const dnsReq = dnsSkill.level < dnsSkill.maxLevel ? getSkillRequirement('dnsAmplification', dnsNextLevel - 1) : null;
+            
+            const dnsBtn = document.createElement('button');
+            dnsBtn.className = `skill-btn ${dnsSkill.level > 0 ? 'unlocked' : ''}`;
+            const dnsCooldown = dnsSkill.cooldown;
+            dnsBtn.disabled = dnsSkill.level === 0 || dnsCooldown > 0;
+            dnsBtn.onclick = dnsSkill.level > 0 ? activateDNSAmplification : null;
+            
+            let dnsHtml = `
+                <div class="skill-level">LVL ${dnsSkill.level}/${dnsSkill.maxLevel}</div>
+                <div class="btn-info">
+                    <span class="btn-name">DNS Amplification</span>
+                </div>
+                <div style="color: #ff6666; font-size: 11px; margin-top: 2px;">
+                    ${dnsSkill.level > 0 ? `x${dnsSkill.multiplier + (dnsSkill.level - 1) * 20} production for 10s` : 'LOCKED'}
+                </div>
+            `;
+
+            if (dnsSkill.level === 0) {
+                dnsHtml += `<div class="requirement-text">Unlock: Free (click to unlock)</div>`;
+                dnsBtn.onclick = () => upgradeSkill('dnsAmplification');
+                dnsBtn.disabled = false;
+            } else if (dnsReq) {
+                const bandwidthMet = bandwidth >= dnsReq.bandwidth;
+                const packetsMet = GameState.totalPackets >= dnsReq.packets;
+                const costMet = GameState.data >= dnsReq.cost;
+                
+                dnsHtml += `
+                    <div class="requirement-text ${bandwidthMet ? 'requirement-met' : 'requirement-not-met'}">
+                        BW: ${formatNumber(bandwidth)}/${formatNumber(dnsReq.bandwidth)}
+                    </div>
+                    <div class="requirement-text ${packetsMet ? 'requirement-met' : 'requirement-not-met'}">
+                        Packets: ${GameState.totalPackets}/${dnsReq.packets}
+                    </div>
+                    ${dnsReq.cost > 0n ? `<div class="requirement-text ${costMet ? 'requirement-met' : 'requirement-not-met'}">Cost: ${formatNumber(dnsReq.cost)}</div>` : ''}
+                    <button onclick="event.stopPropagation(); upgradeSkill('dnsAmplification')" 
+                            ${!bandwidthMet || !packetsMet || !costMet ? 'disabled' : ''}
+                            style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #ffaa00; color: #ffaa00; border-radius: 2px; cursor: pointer; font-size: 11px;">
+                        UPGRADE
+                    </button>
+                `;
+            }
+
+            if (dnsCooldown > 0) {
+                dnsHtml += `
+                    <div style="color: #888; font-size: 11px;">Cooldown: ${Math.ceil(dnsCooldown / 1000)}s</div>
+                    <div class="skill-cooldown" style="width: ${(dnsCooldown / (dnsSkill.baseCooldown - (dnsSkill.level - 1) * 5000)) * 100}%"></div>
+                `;
+            }
+
+            dnsBtn.innerHTML = dnsHtml;
+            skillsContainer.appendChild(dnsBtn);
+
+
+            const blackMarketContainer = document.getElementById('blackmarket-container');
+            blackMarketContainer.innerHTML = '';
+            BLACK_MARKET_ITEMS.forEach(item => {
+                const purchased = GameState.blackMarket[item.id].purchased;
+                const canAfford = GameState.crypto >= item.costCrypto;
+                const btn = document.createElement('button');
+                btn.className = 'upgrade-btn';
+                btn.disabled = purchased || !canAfford;
+                btn.onclick = () => buyBlackMarketItem(item.id);
+                btn.innerHTML = `
+                    <div class="btn-info">
+                        <span class="btn-name">${item.name}</span>
+                        ${purchased ? '<span class="btn-count">[✓]</span>' : ''}
+                    </div>
+                    ${!purchased ? `<div class="btn-cost">Cost: ${item.costCrypto.toFixed(2)} XMR</div>` : ''}
+                    <div style="color: #666; font-size: 11px; margin-top: 2px;">${item.description}</div>
+                `;
+                blackMarketContainer.appendChild(btn);
+            });
+
+            // Broadcast Storm skill
+            const stormSkill = GameState.skills.broadcastStorm;
+            const stormNextLevel = stormSkill.level + 1;
+            const stormReq = stormSkill.level < stormSkill.maxLevel ? getSkillRequirement('broadcastStorm', stormNextLevel - 1) : null;
+
+            const stormBtn = document.createElement('button');
+            stormBtn.className = `skill-btn ${stormSkill.level > 0 ? 'unlocked' : ''}`;
+            stormBtn.disabled = stormSkill.level === 0 || stormSkill.crashed;
+            stormBtn.onclick = stormSkill.level > 0 ? activateBroadcastStorm : null;
+
+            let stormHtml = `
+                <div class="skill-level">LVL ${stormSkill.level}/${stormSkill.maxLevel}</div>
+                <div class="btn-info">
+                    <span class="btn-name">Broadcast Storm</span>
+                </div>
+                <div style="color: #ff6666; font-size: 11px; margin-top: 2px;">
+                    ${stormSkill.level > 0 ? `x${stormSkill.multiplier + (stormSkill.level - 1) * 5} production (risk of crash)` : 'LOCKED'}
+                </div>
+            `;
+
+            if (stormReq) {
+                const bandwidthMet = bandwidth >= stormReq.bandwidth;
+                const packetsMet = GameState.totalPackets >= stormReq.packets;
+                const costMet = GameState.data >= stormReq.cost;
+
+                stormHtml += `
+                    <div class="requirement-text ${bandwidthMet ? 'requirement-met' : 'requirement-not-met'}">
+                        BW: ${formatNumber(bandwidth)}/${formatNumber(stormReq.bandwidth)}
+                    </div>
+                    <div class="requirement-text ${packetsMet ? 'requirement-met' : 'requirement-not-met'}">
+                        Packets: ${GameState.totalPackets}/${stormReq.packets}
+                    </div>
+                    ${stormReq.cost > 0n ? `<div class="requirement-text ${costMet ? 'requirement-met' : 'requirement-not-met'}">Cost: ${formatNumber(stormReq.cost)}</div>` : ''}
+                    <button onclick="event.stopPropagation(); upgradeSkill('broadcastStorm')" 
+                            ${!bandwidthMet || !packetsMet || !costMet ? 'disabled' : ''}
+                            style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #ffaa00; color: #ffaa00; border-radius: 2px; cursor: pointer; font-size: 11px;">
+                        UPGRADE
+                    </button>
+                `;
+            }
+
+            if (stormSkill.crashed) {
+                stormHtml += `<div style="color: #ff4444; font-size: 11px;">Recovery in progress...</div>`;
+            }
+
+            stormBtn.innerHTML = stormHtml;
+            skillsContainer.appendChild(stormBtn);
+
+            // Packet Injection skill
+            const injectSkill = GameState.skills.packetInjection;
+            const injectNextLevel = injectSkill.level + 1;
+            const injectReq = injectSkill.level < injectSkill.maxLevel ? getSkillRequirement('packetInjection', injectNextLevel - 1) : null;
+
+            const injectBtn = document.createElement('button');
+            injectBtn.className = `skill-btn ${injectSkill.level > 0 ? 'unlocked' : ''}`;
+            injectBtn.disabled = injectSkill.level === 0 || injectSkill.cooldown > 0;
+            injectBtn.onclick = injectSkill.level > 0 ? activatePacketInjection : null;
+
+            let injectHtml = `
+                <div class="skill-level">LVL ${injectSkill.level}/${injectSkill.maxLevel}</div>
+                <div class="btn-info">
+                    <span class="btn-name">Packet Injection</span>
+                </div>
+                <div style="color: #ff6666; font-size: 11px; margin-top: 2px;">
+                    ${injectSkill.level > 0 ? `x${injectSkill.clickMultiplier + (injectSkill.level - 1) * 3} manual ping gain for 15s` : 'LOCKED'}
+                </div>
+            `;
+
+            if (injectReq) {
+                const bandwidthMet = bandwidth >= injectReq.bandwidth;
+                const packetsMet = GameState.totalPackets >= injectReq.packets;
+                const costMet = GameState.data >= injectReq.cost;
+
+                injectHtml += `
+                    <div class="requirement-text ${bandwidthMet ? 'requirement-met' : 'requirement-not-met'}">
+                        BW: ${formatNumber(bandwidth)}/${formatNumber(injectReq.bandwidth)}
+                    </div>
+                    <div class="requirement-text ${packetsMet ? 'requirement-met' : 'requirement-not-met'}">
+                        Packets: ${GameState.totalPackets}/${injectReq.packets}
+                    </div>
+                    <div class="requirement-text ${costMet ? 'requirement-met' : 'requirement-not-met'}">Cost: ${formatNumber(injectReq.cost)}</div>
+                    <button onclick="event.stopPropagation(); upgradeSkill('packetInjection')" 
+                            ${!bandwidthMet || !packetsMet || !costMet ? 'disabled' : ''}
+                            style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #ffaa00; color: #ffaa00; border-radius: 2px; cursor: pointer; font-size: 11px;">
+                        UPGRADE
+                    </button>
+                `;
+            }
+
+            if (injectSkill.cooldown > 0) {
+                injectHtml += `<div style="color: #888; font-size: 11px;">Cooldown: ${Math.ceil(injectSkill.cooldown / 1000)}s</div>`;
+            }
+
+            injectBtn.innerHTML = injectHtml;
+            skillsContainer.appendChild(injectBtn);
+        }
+
+        // ============================================
+        // SAVE/LOAD SYSTEM
+        // ============================================
+
+        function saveGame() {
+            const saveData = {
+                data: GameState.data.toString(),
+                totalPackets: GameState.totalPackets.toString(),
+                startTime: GameState.startTime,
+                lastSave: Date.now(),
+                temperature: {
+                    current: GameState.temperature.current,
+                    target: GameState.temperature.target
+                },
+                buildings: {},
+                upgrades: {},
+                consumables: {},
+                targets: {},
+                skills: {
+                    dnsAmplification: { level: GameState.skills.dnsAmplification.level },
+                    broadcastStorm: { level: GameState.skills.broadcastStorm.level },
+                    packetInjection: { level: GameState.skills.packetInjection.level }
+                },
+                uiTheme: GameState.uiTheme,
+                miningMode: GameState.miningMode,
+                crypto: GameState.crypto,
+                processorCores: GameState.processorCores.toString(),
+                blackMarket: GameState.blackMarket,
+                contractStats: { crashes: GameState.contract.stats.crashes.toString() }
+            };
+
+            Object.keys(GameState.buildings).forEach(key => {
+                saveData.buildings[key] = GameState.buildings[key].count.toString();
+            });
+
+            Object.keys(GameState.upgrades).forEach(key => {
+                saveData.upgrades[key] = GameState.upgrades[key].purchased;
+            });
+
+            Object.keys(GameState.consumables).forEach(key => {
+                saveData.consumables[key] = GameState.consumables[key].count.toString();
+            });
+
+            Object.keys(GameState.targets).forEach(key => {
+                saveData.targets[key] = GameState.targets[key].compromised;
+            });
+
+            localStorage.setItem('swamped_save', JSON.stringify(saveData));
+            GameState.lastSave = Date.now();
+        }
+
+        function loadGame() {
+            const saveData = localStorage.getItem('swamped_save');
+            if (!saveData) return false;
+
+            try {
+                const data = JSON.parse(saveData);
+                
+                GameState.data = BigInt(data.data);
+                GameState.totalPackets = BigInt(data.totalPackets);
+                GameState.startTime = data.startTime;
+                
+                if (data.temperature) {
+                    GameState.temperature.current = data.temperature.current;
+                    GameState.temperature.target = data.temperature.target;
+                }
+                
+                Object.keys(data.buildings).forEach(key => {
+                    GameState.buildings[key].count = BigInt(data.buildings[key]);
+                });
+
+                Object.keys(data.upgrades).forEach(key => {
+                    GameState.upgrades[key].purchased = data.upgrades[key];
+                });
+
+                if (data.consumables) {
+                    Object.keys(data.consumables).forEach(key => {
+                        if (GameState.consumables[key]) {
+                            GameState.consumables[key].count = BigInt(data.consumables[key]);
+                        }
+                    });
+                }
+
+                if (data.targets) {
+                    Object.keys(data.targets).forEach(key => {
+                        if (GameState.targets[key]) {
+                            GameState.targets[key].compromised = data.targets[key];
+                        }
+                    });
+                }
+
+                if (data.skills) {
+                    if (data.skills.dnsAmplification) {
+                        GameState.skills.dnsAmplification.level = data.skills.dnsAmplification.level;
+                    }
+                    if (data.skills.broadcastStorm) {
+                        GameState.skills.broadcastStorm.level = data.skills.broadcastStorm.level;
+                    }
+                    if (data.skills.packetInjection) {
+                        GameState.skills.packetInjection.level = data.skills.packetInjection.level;
+                    }
+                }
+
+                if (data.miningMode) GameState.miningMode = data.miningMode;
+                if (typeof data.crypto === 'number') GameState.crypto = data.crypto;
+                if (data.processorCores) GameState.processorCores = BigInt(data.processorCores);
+                if (data.blackMarket) {
+                    Object.keys(data.blackMarket).forEach(key => {
+                        if (GameState.blackMarket[key]) GameState.blackMarket[key].purchased = data.blackMarket[key].purchased;
+                    });
+                }
+                if (data.contractStats?.crashes) GameState.contract.stats.crashes = BigInt(data.contractStats.crashes);
+
+                const savedTheme = data.uiTheme || localStorage.getItem('swamped_theme') || 'default';
+                applyTheme(savedTheme, false);
+
+                const offlineTime = (Date.now() - data.lastSave) / 1000;
+                if (offlineTime > 5) {
+                    const bandwidth = calculateTotalBandwidth();
+                    const offlineGain = BigInt(Math.floor(Number(bandwidth) * offlineTime));
+                    if (offlineGain > 0n) {
+                        GameState.data += offlineGain;
+                        addLog(`$ Network activity detected during offline period`, 'info');
+                        addLog(`$ Collected ${formatNumber(offlineGain)} (${Math.floor(offlineTime)}s offline)`, 'success');
+                    }
+                }
+
+                return true;
+            } catch (e) {
+                console.error('Failed to load save:', e);
+                return false;
+            }
+        }
+
+        // ============================================
+        // COMMAND LINE SYSTEM
+        // ============================================
+
+        const commandHistory = [];
+        let historyIndex = -1;
+
+        function getSupportedCommands() {
+            return ['ping', 'help', 'stats', 'temp', 'save', 'clear', 'reset', 'theme', 'mine', 'prestige', 'contract', 'firewall', 'traceback', 'null_route', ...GameState.temperature.qteCommands];
+        }
+
+        function autocompleteCommand(input) {
+            const value = input.value.trim().toLowerCase();
+            if (!value) return;
+
+            const matches = getSupportedCommands().filter(cmd => cmd.startsWith(value));
+            if (matches.length === 1) {
+                input.value = matches[0];
+            } else if (matches.length > 1) {
+                addLog(`$ Suggestions: ${matches.join(', ')}`, 'info');
+            }
+        }
+
+        function navigateHistory(direction, input) {
+            if (commandHistory.length === 0) {
+                return;
+            }
+
+            if (direction === 'up') {
+                historyIndex = Math.min(commandHistory.length - 1, historyIndex + 1);
+            } else {
+                historyIndex = Math.max(-1, historyIndex - 1);
+            }
+
+            if (historyIndex === -1) {
+                input.value = '';
+                return;
+            }
+
+            input.value = commandHistory[commandHistory.length - 1 - historyIndex];
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+
+        function executeCommand(cmd) {
+            const command = cmd.trim().toLowerCase();
+            
+            if (!command) return;
+
+            if (handleTemperatureQTE(command)) {
+                return;
+            }
+
+            if (GameState.rivalAttack.active && ['firewall','traceback','null_route'].includes(command)) {
+                resolveRivalAttack(command === GameState.rivalAttack.expectedCommand);
+                return;
+            }
+
+            addLog(`$ ${cmd}`, 'info');
+
+            const [baseCommand, ...args] = command.split(/\s+/);
+            const arg = args[0];
+            const commands = {
+                'ping': () => {
+                    let count = 1;
+                    if (arg !== undefined) {
+                        const parsed = parseInt(arg, 10);
+                        if (Number.isNaN(parsed) || parsed < 1) {
+                            addLog(`$ ERROR: usage -> ping [count] (count must be >= 1)`, 'error');
+                            return;
+                        }
+                        count = Math.min(50, parsed);
+                    }
+
+                    addLog(`PING 8.8.8.8 (8.8.8.8) ${count} packet(s) prepared.`, 'success');
+                    generatePacket(count);
+                },
+                'help': () => {
+                    addLog(`Available commands:`, 'info');
+                    addLog(`  ping [n]       - Generate data packets (1 to 50 per command)`, 'info');
+                    addLog(`  theme [name]   - Switch terminal theme (default/mono/pink/amber)`, 'info');
+                    addLog(`  theme list     - Show available themes`, 'info');
+                    addLog(`  mine [data|crypto] - Toggle mining mode`, 'info');
+                    addLog(`  prestige       - Reboot for permanent processor cores`, 'info');
+                    addLog(`  contract       - Accept random mission`, 'info');
+                    addLog(`  stats          - Show current statistics`, 'info');
+                    addLog(`  temp           - Check temperature status`, 'info');
+                    addLog(`  save           - Manually save game`, 'info');
+                    addLog(`  clear          - Clear log history`, 'info');
+                    addLog(`  reset          - Reset game (WARNING!)`, 'info');
+                    addLog(`  [Tab]          - Autocomplete command`, 'info');
+                    addLog(`  [↑/↓]          - Navigate command history`, 'info');
+                },
+                'stats': () => {
+                    addLog(`=== System Statistics ===`, 'info');
+                    addLog(`Data: ${formatNumber(GameState.data)}`, 'success');
+                    addLog(`Bandwidth: ${formatNumber(calculateTotalBandwidth())}/s`, 'success');
+                    addLog(`Total Packets: ${GameState.totalPackets}`, 'success');
+                    addLog(`Temperature: ${Math.floor(GameState.temperature.current)}°C`, GameState.temperature.current > 30 ? 'warning' : 'success');
+                    const uptime = Math.floor((Date.now() - GameState.startTime) / 1000);
+                    addLog(`Uptime: ${formatTime(uptime)}`, 'success');
+                    addLog(`Skills: DNS L${GameState.skills.dnsAmplification.level}, Storm L${GameState.skills.broadcastStorm.level}, Inject L${GameState.skills.packetInjection.level}`, 'info');
+                    const compromised = Object.values(GameState.targets).filter(t => t.compromised).length;
+                    addLog(`Compromised targets: ${compromised}/${SOCIAL_TARGETS.length}`, 'info');
+                    addLog(`Difficulty scaling: +20% costs (packet requirements unchanged)`, 'warning');
+                    addLog(`Crypto: ${GameState.crypto.toFixed(2)} XMR | Processor cores: ${GameState.processorCores}`, 'info');
+                    addLog(`Mining mode: ${GameState.miningMode.toUpperCase()}`, 'info');
+                    addLog(`Contract active: ${GameState.contract.active ? GameState.contract.active.name : 'none'}`, 'info');
+                },
+                'temp': () => {
+                    const temp = Math.floor(GameState.temperature.current);
+                    addLog(`Current temperature: ${temp}°C`, temp > 30 ? 'warning' : 'success');
+                    if (GameState.temperature.productionPenalty > 0) {
+                        addLog(`Production penalty: -${Math.floor(GameState.temperature.productionPenalty * 100)}%`, 'error');
+                        addLog(`Recommendation: Use AC Repair Kit or wait for emergency cooling prompt`, 'warning');
+                    } else {
+                        addLog(`Temperature within safe limits`, 'success');
+                    }
+                },
+                'theme': () => {
+                    if (!arg) {
+                        addLog(`Current theme: ${GameState.uiTheme}`, 'info');
+                        addLog(`Use 'theme list' to view available themes`, 'info');
+                        return;
+                    }
+
+                    if (arg === 'list') {
+                        addLog(`Themes available: default, mono, pink, amber`, 'info');
+                        return;
+                    }
+
+                    if (!['default','mono','pink','amber'].includes(arg)) {
+                        addLog(`Unknown theme '${arg}'. Use: theme default|mono|pink|amber|list`, 'error');
+                        return;
+                    }
+
+                    const activeTheme = applyTheme(arg);
+                    addLog(`Theme switched to ${activeTheme}`, 'success');
+                },
+                'mine': () => {
+                    if (!arg || !['data','crypto'].includes(arg)) {
+                        addLog(`Usage: mine data|crypto`, 'warning');
+                        return;
+                    }
+                    GameState.miningMode = arg;
+                    addLog(`Mining mode switched to ${arg.toUpperCase()}`, 'success');
+                    updateDisplay();
+                },
+                'prestige': () => {
+                    if (!confirm('Formatage Complet & Installation de Rootkit ? This resets progress for permanent cores.')) {
+                        addLog(`$ Prestige aborted`, 'warning');
+                        return;
+                    }
+                    performPrestige();
+                },
+                'contract': () => {
+                    startRandomContract();
+                },
+                'save': () => {
+                    saveGame();
+                    addLog(`Game saved successfully`, 'success');
+                },
+                'clear': () => {
+                    document.getElementById('logs').innerHTML = '';
+                    addLog(`Log cleared`, 'info');
+                },
+                'reset': () => {
+                    if (confirm('WARNING: This will reset all progress. Continue?')) {
+                        localStorage.removeItem('swamped_save');
+                        location.reload();
+                    }
+                }
+            };
+
+            if (commands[baseCommand]) {
+                commands[baseCommand]();
+            } else {
+                addLog(`bash: ${command}: command not found`, 'error');
+            }
+        }
+
+        // ============================================
+        // EVENT LISTENERS
+        // ============================================
+
+        document.getElementById('clickable-area').addEventListener('click', generatePacket);
+        
+        document.getElementById('command-input').addEventListener('keydown', (e) => {
+            const input = e.target;
+
+            if (e.key === 'Enter') {
+                const value = input.value;
+                executeCommand(value);
+
+                if (value.trim()) {
+                    commandHistory.push(value.trim());
+                }
+
+                historyIndex = -1;
+                input.value = '';
+                return;
+            }
+
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                autocompleteCommand(input);
+                return;
+            }
+
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                navigateHistory('up', input);
+                return;
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                navigateHistory('down', input);
+            }
+        });
+
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabId = btn.dataset.tab;
+                
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+            });
+        });
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+
+        function init() {
+            const loaded = loadGame();
+            if (loaded) {
+                addLog(`$ Previous session restored`, 'success');
+            } else {
+                applyTheme(localStorage.getItem('swamped_theme') || 'default', false);
+            }
+            
+            updateDisplay();
+            
+            setInterval(gameTick, 100);
+            
+            addLog(`$ Welcome to SWAMPED v3.1`, 'success');
+            addLog(`$ Network infrastructure management system ready`, 'info');
+            addLog(`$ New: Emergency thermal management protocols active`, 'info');
+        }
+
+        init();
+    </script>
+</body>
+</html>
