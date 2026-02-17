@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>root@localhost: ~</title>
+        <link rel="stylesheet" href="assets/styles.css">
+
+</head>
+<body>
+    <div class="terminal-header">
+        <div class="terminal-title">
+            <span id="solar-indicator" style="color:#ffaa00;display:none;">☀ SOLAR STORM</span>
+            <span>●</span>
+            <span>root@localhost: ~</span>
+        </div>
+        <div class="terminal-controls">
+            <button class="terminal-btn btn-close"></button>
+            <button class="terminal-btn btn-minimize"></button>
+            <button class="terminal-btn btn-maximize"></button>
+        </div>
+    </div>
+
+    <div class="terminal-container">
+        <div class="stats-bar">
+            <div class="stat-item"><span class="stat-label">[DATA]</span><span class="stat-value" id="data-display">0 o</span></div>
+            <div class="stat-item"><span class="stat-label">[BANDWIDTH]</span><span class="stat-value" id="bandwidth-display">0 o/s</span></div>
+            <div class="stat-item"><span class="stat-label">[TEMP]</span><span class="stat-value" id="temp-display">18°C</span></div>
+            <div class="stat-item"><span class="stat-label">[UPTIME]</span><span class="stat-value" id="uptime-display">0s</span></div>
+            <div class="stat-item"><span class="stat-label">[PACKETS]</span><span class="stat-value" id="packets-display">0</span></div>
+            <div class="stat-item"><span class="stat-label">[XMR]</span><span class="stat-value" id="crypto-display">0.00 XMR</span></div>
+            <div class="stat-item"><span class="stat-label">[CORES]</span><span class="stat-value" id="cores-display">0</span></div>
+            <div class="stat-item"><span class="stat-label">[MODE]</span><span class="stat-value" id="mode-display">DATA</span></div>
+            <div class="stat-item"><span class="stat-label">[WATTS]</span><span class="stat-value" id="watts-display">0 / 2500 W</span></div>
+        </div>
+
+        <div id="temperature-container" style="display:none;"><div class="temperature-bar"><div class="temperature-fill normal" id="temperature-fill"></div></div></div>
+        <div id="instability-container" style="display:none;"><div class="instability-bar"><div class="instability-fill" id="instability-fill"></div></div></div>
+        <div id="malfunction-container" style="display:none;"><div class="malfunction-bar"><div class="malfunction-fill" id="malfunction-fill"></div></div></div>
+        <div id="crash-message" class="network-crash" style="display:none;">⚠ NETWORK CRASH - SYSTEM RECOVERY IN PROGRESS ⚠</div>
+        <div id="malfunction-message" class="system-malfunction" style="display:none;">⚠ SYSTEM MALFUNCTION DETECTED ⚠</div>
+        <div id="blackout-message" class="network-crash" style="display:none;">⚠ POWER GRID BLACKOUT - BACKUP GENERATOR REQUIRED ⚠</div>
+
+        <div class="logs-container" id="logs">
+            <div class="log-entry log-success"><span class="log-timestamp">[00:00:00]</span><span>$ System initialized successfully</span></div>
+            <div class="log-entry log-info"><span class="log-timestamp">[00:00:00]</span><span>$ Network services starting...</span></div>
+            <div class="log-entry log-success"><span class="log-timestamp">[00:00:00]</span><span>$ Type 'help' for available commands</span></div>
+        </div>
+
+        <div class="tab-container">
+            <button class="tab-btn active" data-tab="infrastructure">Infrastructure</button>
+            <button class="tab-btn" data-tab="upgrades">Upgrades</button>
+            <button class="tab-btn" data-tab="consumables">Consumables</button>
+            <button class="tab-btn" data-tab="social">Social Eng.</button>
+            <button class="tab-btn" data-tab="skills">Skills</button>
+            <button class="tab-btn" data-tab="talents">Talent Tree</button>
+            <button class="tab-btn" data-tab="contracts">Contracts</button>
+            <button class="tab-btn" data-tab="blackmarket">Black Market</button>
+            <button class="tab-btn" data-tab="worldmap">World Map</button>
+            <button class="tab-btn matrix-tab" id="matrix-tab-btn" data-tab="matrix">Matrix</button>
+        </div>
+
+        <!-- TABS -->
+        <div id="tab-infrastructure" class="tab-content active">
+            <div class="command-panel">
+                <div class="panel-title panel-title-toggle">// Mission Control <button class="panel-toggle-btn" onclick="toggleMissionSection('objective')">Toggle</button></div>
+                <div id="mission-objective-wrap" class="collapsible-wrap">
+                    <div id="objective-panel" class="objective-panel"></div>
+                </div>
+                <div class="panel-title panel-title-toggle" style="margin-top:10px;">// Command Loadout <button class="panel-toggle-btn" onclick="toggleMissionSection('loadout')">Toggle</button></div>
+                <div id="mission-loadout-wrap" class="collapsible-wrap">
+                    <div class="loadout-grid" id="loadout-buttons"></div>
+                </div>
+            </div>
+            <div class="command-panel">
+                <div class="panel-title">// Network Infrastructure</div>
+                <div class="buttons-grid" id="buildings-container"></div>
+            </div>
+        </div>
+        <div id="tab-upgrades" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// System Upgrades</div>
+                <div class="buttons-grid" id="upgrades-container"></div>
+            </div>
+        </div>
+        <div id="tab-consumables" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Consumable Items</div>
+                <div class="buttons-grid" id="consumables-container"></div>
+            </div>
+        </div>
+        <div id="tab-social" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Social Engineering Targets</div>
+                <div class="buttons-grid" id="targets-container"></div>
+            </div>
+        </div>
+        <div id="tab-skills" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Advanced Techniques [USE WITH CAUTION]</div>
+                <div class="skill-section" id="skills-container"></div>
+            </div>
+        </div>
+        <div id="tab-talents" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Talent Tree [Red / Blue / Hardware]</div>
+                <div class="buttons-grid" id="talents-container"></div>
+            </div>
+        </div>
+        <div id="tab-contracts" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Faction Contracts</div>
+                <button class="upgrade-btn" onclick="openContractBoard()">Open Contract Board</button>
+                <div style="color:#666;margin-top:8px;font-size:12px;" id="contract-summary"></div>
+            </div>
+        </div>
+        <div id="tab-blackmarket" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Black Market [XMR Only]</div>
+                <button class="upgrade-btn" onclick="openBlackMarketBoard()">Open Black Market Catalog</button>
+            </div>
+        </div>
+        <div id="tab-worldmap" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// ASCII World Ops Map</div>
+                <button class="upgrade-btn" onclick="openWorldMap()">Open World Map</button>
+            </div>
+        </div>
+
+        <!-- MATRIX TAB -->
+        <div id="tab-matrix" class="tab-content">
+            <div class="command-panel" style="padding:0;overflow:hidden;">
+                <div class="matrix-header">
+                    <span class="matrix-title">▓ MATRIX PROTOCOL v0.7 — E2E encrypted</span>
+                    <span class="matrix-status online">● CONNECTED via TOR</span>
+                </div>
+                <div class="matrix-panel">
+                    <div class="matrix-contacts" id="matrix-contacts-list"></div>
+                    <div class="matrix-chat">
+                        <div class="matrix-chat-header">
+                            <span id="matrix-chat-contact">—</span>
+                            <span id="matrix-chat-role" style="color:#333;">—</span>
+                        </div>
+                        <div class="matrix-messages" id="matrix-messages"></div>
+                        <div class="matrix-input-row">
+                            <input class="matrix-input" id="matrix-input" placeholder="Send encrypted message..." autocomplete="off">
+                            <button class="matrix-send-btn" onclick="sendMatrixMessage()">SEND</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="command-line" id="command-line">
+            <span class="prompt">user@localhost:~$</span>
+            <input type="text" class="command-input" id="command-input" placeholder="Type 'ping' or click anywhere..." autocomplete="off" spellcheck="false">
+        </div>
+    </div>
+
+    <div class="clickable-area" id="clickable-area"></div>
+    <div class="dialog-overlay" id="dialog-overlay">
+        <div class="dialog-box" id="dialog-box"></div>
+    </div>
+
+        <script src="assets/app.js"></script>
+
+</body>
+</html>
