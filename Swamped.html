@@ -615,6 +615,10 @@
                 <span class="stat-label">[MODE]</span>
                 <span class="stat-value" id="mode-display">DATA</span>
             </div>
+            <div class="stat-item">
+                <span class="stat-label">[WATTS]</span>
+                <span class="stat-value" id="watts-display">0 / 2500 W</span>
+            </div>
         </div>
 
         <div id="temperature-container" style="display: none;">
@@ -643,6 +647,10 @@
             ⚠ SYSTEM MALFUNCTION DETECTED ⚠
         </div>
 
+        <div id="blackout-message" class="network-crash" style="display: none;">
+            ⚠ POWER GRID BLACKOUT - BACKUP GENERATOR REQUIRED ⚠
+        </div>
+
         <div class="logs-container" id="logs">
             <div class="log-entry log-success">
                 <span class="log-timestamp">[00:00:00]</span>
@@ -664,7 +672,10 @@
             <button class="tab-btn" data-tab="consumables">Consumables</button>
             <button class="tab-btn" data-tab="social">Social Eng.</button>
             <button class="tab-btn" data-tab="skills">Skills</button>
+            <button class="tab-btn" data-tab="talents">Talent Tree</button>
+            <button class="tab-btn" data-tab="contracts">Contracts</button>
             <button class="tab-btn" data-tab="blackmarket">Black Market</button>
+            <button class="tab-btn" data-tab="worldmap">World Map</button>
         </div>
 
         <div id="tab-infrastructure" class="tab-content active">
@@ -702,10 +713,33 @@
             </div>
         </div>
 
+        <div id="tab-talents" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Talent Tree [Red / Blue / Hardware]</div>
+                <div class="buttons-grid" id="talents-container"></div>
+            </div>
+        </div>
+
+        <div id="tab-contracts" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// Faction Contracts</div>
+                <button class="upgrade-btn" onclick="openContractBoard()">Open Contract Board</button>
+                <div style="color:#666; margin-top:8px; font-size:12px;" id="contract-summary"></div>
+            </div>
+        </div>
+
         <div id="tab-blackmarket" class="tab-content">
             <div class="command-panel">
                 <div class="panel-title">// Black Market [XMR Only]</div>
-                <div class="buttons-grid" id="blackmarket-container"></div>
+                <button class="upgrade-btn" onclick="openBlackMarketBoard()">Open Black Market Catalog</button>
+                <div style="color:#666; margin-top:8px; font-size:12px;">Scrolling popup catalog with all listings.</div>
+            </div>
+        </div>
+
+        <div id="tab-worldmap" class="tab-content">
+            <div class="command-panel">
+                <div class="panel-title">// ASCII World Ops Map</div>
+                <button class="upgrade-btn" onclick="openWorldMap()">Open World Map</button>
             </div>
         </div>
 
@@ -756,7 +790,7 @@
                     maxLevel: 5,
                     active: false, 
                     cooldown: 0, 
-                    baseCooldown: 60000,
+                    baseCooldown: 90000,
                     duration: 10000,
                     multiplier: 50
                 },
@@ -775,7 +809,7 @@
                     maxLevel: 3,
                     active: false,
                     cooldown: 0,
-                    baseCooldown: 45000,
+                    baseCooldown: 70000,
                     duration: 15000,
                     clickMultiplier: 5
                 }
@@ -800,16 +834,49 @@
             contract: {
                 active: null,
                 pool: [
-                    { id: 'contract_data_1', name: 'Generate 1 To in < 5 min', goalType: 'data', goal: 1000000000000n, durationMs: 300000, rewardCrypto: 2.5, rewardSkin: 'pink' },
-                    { id: 'contract_ping_1', name: 'Send 12000 packets in < 6 min', goalType: 'packets', goal: 12000n, durationMs: 360000, rewardCrypto: 2.0, rewardSkin: 'amber' },
-                    { id: 'contract_crash_1', name: 'Trigger 2 network crashes in < 8 min', goalType: 'crashes', goal: 2n, durationMs: 480000, rewardCrypto: 3.5, rewardSkin: 'mono' }
+                    { id: 'contract_data_1', name: 'Generate 1 To in < 5 min', goalType: 'data', goal: 2000000000000n, durationMs: 300000, rewardCrypto: 3.2, rewardSkin: 'pink' },
+                    { id: 'contract_ping_1', name: 'Send 12000 packets in < 6 min', goalType: 'packets', goal: 22000n, durationMs: 360000, rewardCrypto: 3.0, rewardSkin: 'amber' },
+                    { id: 'contract_crash_1', name: 'Trigger 2 network crashes in < 8 min', goalType: 'crashes', goal: 3n, durationMs: 480000, rewardCrypto: 4.4, rewardSkin: 'mono' }
                 ],
-                stats: { crashes: 0n }
+                stats: { crashes: 0n, blackouts: 0n, completed: 0n }
             },
+            story: {
+                unlocked: ['boot_sequence'],
+                active: 'boot_sequence'
+            },
+            energy: {
+                currentWatts: 0,
+                capacityWatts: 2500,
+                blackout: false,
+                blackoutEnd: 0,
+                baseCapacity: 2500,
+                hackedGridBonus: 0,
+                backupGenerator: false
+            },
+            factions: {
+                ghostwire: { reputation: 0 },
+                blackflag: { reputation: 0 },
+                overclock: { reputation: 0 }
+            },
+            talents: {
+                redPhishing: 0,
+                redPayload: 0,
+                blueShield: 0,
+                blueCooling: 0,
+                hardwareEfficiency: 0,
+                hardwarePower: 0
+            },
+            packetsFromAutomation: 0n,
+            boosterCooldownUntil: 0,
+            files: [],
+            solarStorm: { active: false, endTime: 0, nextCheck: Date.now() + 150000, impactMode: 'production', productionMultiplier: 0.7, wattsMultiplier: 1.25 },
+            knownAttackerIps: [],
+            honeypot: { active: false, nextIntelAt: 0 },
+            uiRender: { lastPanelRender: 0 },
             targets: {}
         };
 
-        const DIFFICULTY_MULTIPLIER = 1.2;
+        const DIFFICULTY_MULTIPLIER = 1.35;
 
         const BUILDINGS = [
             {
@@ -859,6 +926,22 @@
                 baseProduction: 2500n,
                 multiplier: 1.15,
                 description: 'Industrial scale processing'
+            },
+            {
+                id: 'edge_proxy_farm',
+                name: 'Edge Proxy Farm',
+                baseCost: 12000000n,
+                baseProduction: 14000n,
+                multiplier: 1.17,
+                description: 'Distributed traffic obfuscation nodes'
+            },
+            {
+                id: 'satellite_uplink',
+                name: 'Satellite Uplink',
+                baseCost: 75000000n,
+                baseProduction: 70000n,
+                multiplier: 1.18,
+                description: 'Off-grid high-latency global relay'
             }
         ];
 
@@ -959,8 +1042,8 @@
             {
                 id: 'bandwidth_boost',
                 name: 'Bandwidth Booster',
-                cost: 10000n,
-                description: 'x3 production for 30 seconds',
+                cost: 18000n,
+                description: 'x2 production for 20s (90s cooldown)',
                 effect: 'boost',
                 multiplier: 3,
                 duration: 30000,
@@ -988,25 +1071,242 @@
             {
                 id: 'quantum_rig',
                 name: 'Quantum Mining Rig',
-                costCrypto: 3,
+                costCrypto: 8,
                 description: '+35% crypto mining output',
                 effect: { type: 'crypto_multiplier', value: 1.35 }
             },
             {
                 id: 'rootkit_loader',
                 name: 'Persistent Rootkit Loader',
-                costCrypto: 5,
+                costCrypto: 12,
                 description: '+20% all production forever',
                 effect: { type: 'global_prod_multiplier', value: 1.2 }
             },
             {
                 id: 'stealth_hypervisor',
                 name: 'Stealth Hypervisor',
-                costCrypto: 4,
+                costCrypto: 10,
                 description: '-20% rival hack theft',
                 effect: { type: 'hack_loss_reduction', value: 0.8 }
+            },
+            {
+                id: 'packet_compiler',
+                name: 'Packet Compiler Daemon',
+                costCrypto: 14,
+                description: 'Passive packet generation from infrastructure',
+                effect: { type: 'passive_packets', value: 1 }
+            },
+            {
+                id: 'cold_wallet_leech',
+                name: 'Cold Wallet Leech',
+                costCrypto: 18,
+                description: '+60% crypto mining output',
+                effect: { type: 'crypto_multiplier', value: 1.6 }
+            },
+            {
+                id: 'diesel_backup',
+                name: 'Diesel Backup Generator',
+                costCrypto: 16,
+                description: '+1200W permanent emergency capacity',
+                effect: { type: 'energy_capacity', value: 1200 }
+            },
+            {
+                id: 'grid_hijack',
+                name: 'City Grid Hijack',
+                costCrypto: 22,
+                description: '+1800W hacked power capacity',
+                effect: { type: 'energy_capacity', value: 1800 }
+            },
+            {
+                id: 'antivirus_l1',
+                name: 'Antivirus L1 - Sentinel',
+                costCrypto: 8,
+                description: 'Blocks ~50% of malicious .sh payloads',
+                effect: { type: 'auto_antivirus', value: 1 }
+            },
+            {
+                id: 'antivirus_l2',
+                name: 'Antivirus L2 - Gatekeeper',
+                costCrypto: 14,
+                description: 'Blocks ~75% of malicious .sh payloads',
+                effect: { type: 'auto_antivirus', value: 2 }
+            },
+            {
+                id: 'antivirus_l3',
+                name: 'Antivirus L3 - DeepScan',
+                costCrypto: 21,
+                description: 'Blocks ~90% of malicious .sh payloads',
+                effect: { type: 'auto_antivirus', value: 3 }
+            },
+            {
+                id: 'antivirus_l4',
+                name: 'Antivirus L4 - Monitoring Grid',
+                costCrypto: 32,
+                description: 'L3 protection + enriched logs + occasional attacker IP intel',
+                effect: { type: 'auto_antivirus', value: 4 }
+            },
+            {
+                id: 'intrusion_ai',
+                name: 'Intrusion AI Shield',
+                costCrypto: 20,
+                description: 'Auto-repel intrusions + attacker server IP intel',
+                effect: { type: 'auto_intrusion', value: 1 }
+            },
+            {
+                id: 'hunter_counter',
+                name: 'Counterstrike Hunter Suite',
+                costCrypto: 26,
+                description: 'Chance to steal hardware on auto-defense',
+                effect: { type: 'counter_hack', value: 1 }
+            },
+            {
+                id: 'market_snitch',
+                name: 'Paid Snitch Network',
+                costCrypto: 14,
+                description: 'Cheaper hacker intel + better IP quality',
+                effect: { type: 'intel_discount', value: 0.75 }
+            },
+            {
+                id: 'honeypot_core',
+                name: 'Honeypot Core',
+                costCrypto: 30,
+                description: 'Every 5 min reveals random attacker intel',
+                effect: { type: 'honeypot', value: 1 }
             }
         ];
+
+        const TALENT_TREE = {
+            red: [
+                { id: 'redPhishing', name: 'Phishing Ops', max: 5, cost: 1, desc: '+4% social success / lvl' },
+                { id: 'redPayload', name: 'Payload Chain', max: 5, cost: 1, desc: '+6% manual packet gain / lvl' }
+            ],
+            blue: [
+                { id: 'blueShield', name: 'Defender Stack', max: 5, cost: 1, desc: '-6% rival theft / lvl' },
+                { id: 'blueCooling', name: 'Thermal Doctrine', max: 5, cost: 1, desc: '+1°C safe temp / lvl' }
+            ],
+            hardware: [
+                { id: 'hardwareEfficiency', name: 'Bus Optimization', max: 5, cost: 1, desc: '+5% global production / lvl' },
+                { id: 'hardwarePower', name: 'Power Routing', max: 5, cost: 1, desc: '+400W capacity / lvl' }
+            ]
+        };
+
+        const PRESTIGE_REQUIREMENTS = {
+            minChecks: 3,
+            contractsCompleted: 1n,
+            factionReputation: 10,
+            skillLevel: 2,
+            crypto: 10,
+            packets: 25000n
+        };
+
+        const CONTRACT_BOARD = [
+            {
+                id: 'st_packet_sweep',
+                category: 'starter',
+                faction: 'ghostwire',
+                name: 'Starter: Packet Sweep',
+                requirements: { bandwidth: 9000n, packets: 2500n, watts: 1500 },
+                stages: [
+                    { type: 'packets', goal: 7000n },
+                    { type: 'data', goal: 250000000000n }
+                ],
+                durationMs: 300000,
+                rewards: { crypto: 2.6, reputation: 1 }
+            },
+            {
+                id: 'st_data_pulse',
+                category: 'starter',
+                faction: 'ghostwire',
+                name: 'Starter: Data Pulse Relay',
+                requirements: { bandwidth: 14000n, packets: 4000n, watts: 1900 },
+                stages: [
+                    { type: 'data', goal: 500000000000n },
+                    { type: 'packets', goal: 9000n }
+                ],
+                durationMs: 360000,
+                rewards: { crypto: 3.4, reputation: 2 }
+            },
+            {
+                id: 'op_blackout_chain',
+                category: 'ops',
+                faction: 'blackflag',
+                name: 'Ops: Blackout Chain',
+                requirements: { bandwidth: 30000n, packets: 14000n, watts: 2600 },
+                stages: [
+                    { type: 'blackouts', goal: 1n },
+                    { type: 'crashes', goal: 1n }
+                ],
+                durationMs: 420000,
+                rewards: { crypto: 6.1, reputation: 3 }
+            },
+            {
+                id: 'op_signal_jam',
+                category: 'ops',
+                faction: 'blackflag',
+                name: 'Ops: Signal Jam Protocol',
+                requirements: { bandwidth: 52000n, packets: 22000n, watts: 3400 },
+                stages: [
+                    { type: 'packets', goal: 18000n },
+                    { type: 'bandwidth', goal: 52000n },
+                    { type: 'crashes', goal: 1n }
+                ],
+                durationMs: 510000,
+                rewards: { crypto: 7.8, reputation: 3 }
+            },
+            {
+                id: 'el_ghostwire_arch',
+                category: 'elite',
+                faction: 'ghostwire',
+                name: 'Elite: GhostWire Architect Relay',
+                requirements: { bandwidth: 80000n, packets: 35000n, watts: 4500 },
+                stages: [
+                    { type: 'data', goal: 1500000000000n },
+                    { type: 'crypto', goal: 8 },
+                    { type: 'packets', goal: 26000n }
+                ],
+                durationMs: 600000,
+                rewards: { crypto: 11.2, reputation: 5 }
+            },
+            {
+                id: 'el_overclock_grid',
+                category: 'elite',
+                faction: 'overclock',
+                name: 'Elite: Overclock Grid Dominion',
+                requirements: { bandwidth: 110000n, packets: 50000n, watts: 5600 },
+                stages: [
+                    { type: 'crypto', goal: 14 },
+                    { type: 'bandwidth', goal: 110000n },
+                    { type: 'blackouts', goal: 2n }
+                ],
+                durationMs: 660000,
+                rewards: { crypto: 14.5, reputation: 6 }
+            }
+        ];
+
+        const ASCII_WORLD_MAP = `
+   NORTH AMERICA: [##]   EUROPE: [###]   ASIA: [####]
+   LATAM: [##]           AFRICA: [#]      OCEANIA: [#]
+   LEGEND: # = compromised network cluster
+`;
+
+        const STORY_LOGS = {
+            boot_sequence: {
+                title: 'BOOT_SEQUENCE.log',
+                text: 'You wake in a rented datacenter cage. A message blinks: "Find The Architect. Trust no ISP."'
+            },
+            architect_note: {
+                title: 'architect_note.enc',
+                text: 'Decrypted fragment: "Every compromised company is a node in a larger simulation map."'
+            },
+            rival_manifest: {
+                title: 'rival_manifest.txt',
+                text: 'Rival crews are not random. Someone sells your location after each major contract.'
+            },
+            blackout_protocol: {
+                title: 'blackout_protocol.md',
+                text: 'Emergency protocol: overload city power and mine during chaos windows to hide traffic.'
+            }
+        };
 
         const SOCIAL_TARGETS = [
             {
@@ -1347,7 +1647,17 @@
             return scaleCost(upgrade.cost);
         }
 
+        function calculateBlackMarketCost(item) {
+            const purchased = Object.values(GameState.blackMarket).filter(v => v.purchased).length;
+            return item.costCrypto * Math.pow(1.22, purchased);
+        }
+
         function calculateConsumableCost(consumable) {
+            if (consumable.id === 'phone_list') {
+                const owned = Number(GameState.consumables.phone_list.count);
+                const dynamic = Number(consumable.cost) * Math.pow(1.35, owned);
+                return scaleCost(BigInt(Math.floor(dynamic)));
+            }
             return scaleCost(consumable.cost);
         }
 
@@ -1404,11 +1714,260 @@
             if (GameState.blackMarket.quantum_rig?.purchased) {
                 multiplier *= 1.35;
             }
+            if (GameState.blackMarket.cold_wallet_leech?.purchased) {
+                multiplier *= 1.6;
+            }
             return multiplier;
         }
 
         function getHackLossMultiplier() {
             return GameState.blackMarket.stealth_hypervisor?.purchased ? 0.8 : 1;
+        }
+
+        function getAntivirusLevel() {
+            if (GameState.blackMarket.antivirus_l4?.purchased) return 4;
+            if (GameState.blackMarket.antivirus_l3?.purchased) return 3;
+            if (GameState.blackMarket.antivirus_l2?.purchased) return 2;
+            if (GameState.blackMarket.antivirus_l1?.purchased) return 1;
+            return 0;
+        }
+
+        function getAntivirusProfile() {
+            const level = getAntivirusLevel();
+            const blockChanceByLevel = { 0: 0, 1: 0.5, 2: 0.75, 3: 0.9, 4: 0.9 };
+            return { level, blockChance: blockChanceByLevel[level] || 0, monitoring: level >= 4 };
+        }
+
+        function getAvailableTalentPoints() {
+            const spent = Object.values(GameState.talents).reduce((a, b) => a + b, 0);
+            return Number(GameState.processorCores) - spent;
+        }
+
+        function talentBonus(id, perLevel) {
+            return 1 + GameState.talents[id] * perLevel;
+        }
+
+        function getEnergyCapacity() {
+            let cap = GameState.energy.baseCapacity;
+            if (GameState.energy.backupGenerator) cap += 1200;
+            cap += GameState.energy.hackedGridBonus;
+            cap += GameState.talents.hardwarePower * 400;
+            return cap;
+        }
+
+        function calculateWattsUsage() {
+            let total = 0;
+            BUILDINGS.forEach(b => {
+                const count = Number(GameState.buildings[b.id].count);
+                total += count * Math.max(3, Number(b.baseProduction) * 0.8);
+            });
+            if (GameState.solarStorm.active && GameState.solarStorm.impactMode === 'watts') {
+                total *= GameState.solarStorm.wattsMultiplier;
+            }
+            return Math.floor(total);
+        }
+
+        function applyEnergyState() {
+            GameState.energy.capacityWatts = getEnergyCapacity();
+            GameState.energy.currentWatts = calculateWattsUsage();
+
+            if (GameState.energy.currentWatts > GameState.energy.capacityWatts && !GameState.energy.blackout) {
+                GameState.energy.blackout = true;
+                GameState.energy.blackoutEnd = Date.now() + 10000;
+                GameState.contract.stats.blackouts += 1n;
+                document.getElementById('blackout-message').style.display = 'block';
+                addLog(`$ POWER GRID BLACKOUT TRIGGERED (${GameState.energy.currentWatts}/${GameState.energy.capacityWatts}W)`, 'error');
+            }
+
+            if (GameState.energy.blackout && Date.now() >= GameState.energy.blackoutEnd) {
+                GameState.energy.blackout = false;
+                document.getElementById('blackout-message').style.display = 'none';
+                addLog(`$ Power restored after blackout`, 'success');
+            }
+        }
+
+        function openContractBoard() {
+            const overlay = document.getElementById('dialog-overlay');
+            const dialogBox = document.getElementById('dialog-box');
+            const bw = calculateTotalBandwidth();
+            const watts = GameState.energy.currentWatts;
+            const categories = ['starter', 'ops', 'elite'];
+            let html = `<div class="dialog-header">>>> CONTRACT BOARD <<<</div><div class="dialog-text">Pick contracts matching your level. Recommended BW/packets/watts are shown to avoid impossible picks.</div>`;
+            categories.forEach(cat => {
+                html += `<div style='margin:8px 0 4px;color:#ffaa00;font-weight:700;text-transform:uppercase;'>${cat}</div>`;
+                CONTRACT_BOARD.filter(c => c.category === cat).forEach(c => {
+                    const ok = bw >= c.requirements.bandwidth && GameState.totalPackets >= c.requirements.packets;
+                    const wattsRisk = watts > c.requirements.watts;
+                    const categoryLabel = c.category.charAt(0).toUpperCase() + c.category.slice(1);
+                    html += `<div class="dialog-choice" style="${ok ? '' : 'opacity:0.45;'}" ${ok ? `onclick="acceptBoardContract('${c.id}')"` : ''}>`
+                        + `<strong>${c.name}</strong> <span style='font-size:11px;color:#ffaa00;'>[${categoryLabel}]</span><br>`
+                        + `<span style='font-size:12px;color:#888;'>Req BW ${formatNumber(c.requirements.bandwidth)} / Packets ${c.requirements.packets} / Rec Watts ≤ ${c.requirements.watts}</span><br>`
+                        + `<span style='font-size:12px;color:${wattsRisk ? '#ff6666' : '#888'};'>Current watts: ${watts}${wattsRisk ? ' (over recommended)' : ''}</span><br>`
+                        + `<span style='font-size:12px;color:#888;'>Faction: ${c.faction} | Reward ${c.rewards.crypto.toFixed(2)} XMR +${c.rewards.reputation} rep</span></div>`;
+                });
+            });
+            html += `<div class="dialog-choice" onclick="closeDialog()" style="border-color:#666;color:#666;">Close</div>`;
+            dialogBox.innerHTML = html;
+            overlay.classList.add('active');
+        }
+
+        function acceptBoardContract(contractId) {
+            const c = CONTRACT_BOARD.find(x => x.id === contractId);
+            if (!c || GameState.contract.active) return;
+            const bw = calculateTotalBandwidth();
+            if (bw < c.requirements.bandwidth || GameState.totalPackets < c.requirements.packets) {
+                addLog(`$ Contract requirements not met`, 'error');
+                return;
+            }
+            GameState.contract.active = {
+                ...c,
+                stageIndex: 0,
+                startTime: Date.now(),
+                stageStartData: GameState.data,
+                stageStartPackets: GameState.totalPackets,
+                stageStartCrypto: GameState.crypto,
+                stageStartCrashes: GameState.contract.stats.crashes,
+                stageStartBlackouts: GameState.contract.stats.blackouts
+            };
+            closeDialog();
+            addLog(`$ >>> CONTRACT ACCEPTED: ${c.name} <<<`, 'warning');
+        }
+
+        function openBlackMarketBoard() {
+            const overlay = document.getElementById('dialog-overlay');
+            const dialogBox = document.getElementById('dialog-box');
+            let html = `<div class="dialog-header">>>> BLACK MARKET CATALOG <<<</div><div class="dialog-text">XMR: ${GameState.crypto.toFixed(2)}. Scroll to browse offers.</div>`;
+            BLACK_MARKET_ITEMS.forEach(item => {
+                const purchased = GameState.blackMarket[item.id].purchased;
+                const marketCost = calculateBlackMarketCost(item);
+                const can = GameState.crypto >= marketCost;
+                html += `<div class="dialog-choice" style="${purchased ? 'opacity:0.5;' : ''}" ${(!purchased && can) ? `onclick="buyBlackMarketItem('${item.id}'); closeDialog();"` : ''}>`
+                    + `<strong>${item.name}</strong> ${purchased ? '[OWNED]' : ''}<br><span style='font-size:12px;color:#888;'>${item.description}</span><br><span style='font-size:12px;color:#ffaa00;'>Cost: ${marketCost.toFixed(2)} XMR</span></div>`;
+            });
+            html += `<div class="dialog-choice" onclick="closeDialog()" style="border-color:#666;color:#666;">Close</div>`;
+            dialogBox.innerHTML = html;
+            overlay.classList.add('active');
+        }
+
+        function openWorldMap() {
+            const overlay = document.getElementById('dialog-overlay');
+            const dialogBox = document.getElementById('dialog-box');
+            const compromised = Object.values(GameState.targets).filter(t => t.compromised).length;
+            dialogBox.innerHTML = `<div class="dialog-header">>>> ASCII WORLD MAP <<<</div><pre style="white-space:pre-wrap;color:#ff4444;font-size:12px;">${ASCII_WORLD_MAP}</pre><div class="dialog-text">Compromised targets: ${compromised}/${SOCIAL_TARGETS.length}</div><div class="dialog-choice" onclick="closeDialog()" style="border-color:#666;color:#666;">Close</div>`;
+            overlay.classList.add('active');
+        }
+
+
+        function refreshSystemFiles() {
+            const files = [];
+            if (GameState.consumables.phone_list.count > 0n) {
+                files.push({ name: `corporate_phone_list_${GameState.consumables.phone_list.count}.csv`, type: 'resource' });
+            }
+            GameState.files.filter(f => f.type === 'malicious').forEach(f => files.push(f));
+            GameState.files = files;
+        }
+
+        function spawnMaliciousFile(source = 'intrusion') {
+            const profile = getAntivirusProfile();
+            const id = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            const file = {
+                name: `payload_${id}.sh`,
+                type: 'malicious',
+                createdAt: Date.now(),
+                source,
+                armedAt: Date.now() + 180000
+            };
+
+            if (profile.level > 0 && Math.random() < profile.blockChance) {
+                addLog(`$ Threat blocked by Antivirus L${profile.level}: ${file.name}`, 'success');
+                if (profile.monitoring && Math.random() < 0.25) {
+                    const intelIp = `185.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                    GameState.knownAttackerIps.unshift(intelIp);
+                    GameState.knownAttackerIps = [...new Set(GameState.knownAttackerIps)].slice(0, 20);
+                    addLog(`$ Monitoring report: source=${source}, ts=${new Date(file.createdAt).toLocaleTimeString()}, origin=${intelIp}`, 'info');
+                }
+                return;
+            }
+
+            GameState.files.push(file);
+            if (profile.level === 0) {
+                addLog(`$ suspicious file dropped: ${file.name}`, 'warning');
+            } else {
+                addLog(`$ Antivirus L${profile.level} alert: ${file.name} bypassed initial scan`, 'warning');
+            }
+        }
+
+        function evaluateMaliciousFiles() {
+            const now = Date.now();
+            const pending = [];
+            const profile = getAntivirusProfile();
+            GameState.files.forEach(file => {
+                if (file.type !== 'malicious') {
+                    pending.push(file);
+                    return;
+                }
+                if (now < file.armedAt) {
+                    pending.push(file);
+                    return;
+                }
+
+                if (profile.level > 0 && Math.random() < profile.blockChance) {
+                    addLog(`$ Antivirus L${profile.level} quarantined ${file.name}`, 'success');
+                    if (profile.monitoring && Math.random() < 0.2) {
+                        addLog(`$ Monitoring: quarantined ${file.name} | source=${file.source} | armedAt=${new Date(file.armedAt).toLocaleTimeString()}`, 'info');
+                    }
+                    return;
+                }
+
+                let removed = false;
+                for (const key of ['data_center', 'fiber_backbone', 'dedicated_server']) {
+                    if (GameState.buildings[key]?.count > 0n) {
+                        GameState.buildings[key].count -= 1n;
+                        addLog(`$ ${file.name} executed -> lost 1 ${key.replace('_', ' ')}`, 'error');
+                        removed = true;
+                        break;
+                    }
+                }
+                if (!removed) {
+                    const ratio = 0.5 + Math.random() * 0.5;
+                    const hitCrypto = Math.random() < 0.45;
+                    if (hitCrypto && GameState.crypto > 0) {
+                        const lossXmr = GameState.crypto * ratio;
+                        GameState.crypto = Math.max(0, GameState.crypto - lossXmr);
+                        addLog(`$ ${file.name} executed -> lost ${lossXmr.toFixed(2)} XMR`, 'error');
+                    } else {
+                        const loss = BigInt(Math.floor(Number(GameState.data) * ratio));
+                        GameState.data = GameState.data > loss ? GameState.data - loss : 0n;
+                        addLog(`$ ${file.name} executed -> lost ${formatNumber(loss)}`, 'error');
+                    }
+                }
+            });
+            GameState.files = pending;
+            refreshSystemFiles();
+        }
+
+        function triggerSolarStorm() {
+            if (GameState.solarStorm.active) return;
+            GameState.solarStorm.active = true;
+            const durationMs = 30000 + Math.floor(Math.random() * 30000);
+            const mode = Math.random() < 0.6 ? 'production' : 'watts';
+            if (mode === 'production') {
+                GameState.solarStorm.impactMode = 'production';
+                GameState.solarStorm.productionMultiplier = 0.5 + Math.random() * 0.4;
+                addLog(`$ SOLAR STORM: signal degradation ${(durationMs/1000).toFixed(0)}s | production -${Math.round((1 - GameState.solarStorm.productionMultiplier) * 100)}%`, 'warning');
+            } else {
+                GameState.solarStorm.impactMode = 'watts';
+                GameState.solarStorm.wattsMultiplier = 1.15 + Math.random() * 0.5;
+                addLog(`$ SOLAR STORM: power grid turbulence ${(durationMs/1000).toFixed(0)}s | watts +${Math.round((GameState.solarStorm.wattsMultiplier - 1) * 100)}%`, 'warning');
+            }
+            GameState.solarStorm.endTime = Date.now() + durationMs;
+        }
+
+        function unlockStoryLog(logId) {
+            if (!GameState.story.unlocked.includes(logId)) {
+                GameState.story.unlocked.push(logId);
+                addLog(`$ New encrypted file discovered: ${STORY_LOGS[logId].title}`, 'info');
+            }
         }
 
         function getTimestamp() {
@@ -1500,6 +2059,41 @@
             return false;
         }
 
+        function applyThermalDamage() {
+            const pool = ['data_center','fiber_backbone','dedicated_server','edge_proxy_farm'];
+            const target = pool[Math.floor(Math.random() * pool.length)];
+            if (GameState.buildings[target] && GameState.buildings[target].count > 0n) {
+                GameState.buildings[target].count -= 1n;
+                addLog(`$ Thermal damage destroyed 1 ${target.replace('_',' ')}`, 'error');
+            }
+
+            if (GameState.consumables.phone_list.count > 0n && Math.random() < 0.35) {
+                const loss = BigInt(1 + Math.floor(Math.random() * 2));
+                const actual = GameState.consumables.phone_list.count > loss ? loss : GameState.consumables.phone_list.count;
+                GameState.consumables.phone_list.count -= actual;
+                refreshSystemFiles();
+                addLog(`$ Heat incident burned ${actual} phone list(s)`, 'warning');
+            }
+
+            if (Math.random() < 0.18) {
+                const ownedUpgrades = Object.keys(GameState.upgrades).filter(k => GameState.upgrades[k].purchased);
+                if (ownedUpgrades.length > 0) {
+                    const pick = ownedUpgrades[Math.floor(Math.random() * ownedUpgrades.length)];
+                    GameState.upgrades[pick].purchased = false;
+                    addLog(`$ Heat corruption removed upgrade: ${pick}`, 'warning');
+                }
+            }
+
+            if (Math.random() < 0.14) {
+                const ownedMarket = Object.keys(GameState.blackMarket).filter(k => GameState.blackMarket[k].purchased);
+                if (ownedMarket.length > 0) {
+                    const pick = ownedMarket[Math.floor(Math.random() * ownedMarket.length)];
+                    GameState.blackMarket[pick].purchased = false;
+                    addLog(`$ Heat corruption disabled black market item: ${pick}`, 'warning');
+                }
+            }
+        }
+
         function updateTemperatureQTE() {
             if (GameState.temperature.qteActive) {
                 const elapsed = Date.now() - GameState.temperature.qteStartTime;
@@ -1515,6 +2109,7 @@
                     
                     // Penalty: temperature increases faster
                     GameState.temperature.current += 3;
+                    if (Math.random() < 0.5) applyThermalDamage();
                 }
             }
             
@@ -1562,6 +2157,9 @@
             }
             
             updateTemperatureQTE();
+            if (GameState.temperature.current > 47 && Math.random() < 0.01) {
+                applyThermalDamage();
+            }
         }
 
         // ============================================
@@ -1616,8 +2214,22 @@
         function attemptCompromise(targetId, choiceIndex) {
             const target = SOCIAL_TARGETS.find(t => t.id === targetId);
             const choice = target.dialog.choices[choiceIndex];
-            
-            const success = Math.random() < choice.success;
+            const listsNeeded = BigInt(target.requiredLists);
+
+            if (GameState.consumables.phone_list.count < listsNeeded) {
+                addLog(`$ ERROR: Phone lists depleted before attempt`, 'error');
+                closeDialog();
+                return;
+            }
+
+            if (listsNeeded > 0n) {
+                GameState.consumables.phone_list.count -= listsNeeded;
+                refreshSystemFiles();
+                addLog(`$ Consumed ${listsNeeded} Corporate Phone List(s) for operation`, 'warning');
+            }
+
+            const socialChance = Math.min(0.95, choice.success * talentBonus('redPhishing', 0.04));
+            const success = Math.random() < socialChance;
 
             if (success) {
                 GameState.targets[targetId].compromised = true;
@@ -1632,7 +2244,7 @@
             }
 
             closeDialog();
-            updateDisplay();
+            updateDisplay(false);
             saveGame();
         }
 
@@ -1647,6 +2259,14 @@
         function calculateBuildingCost(building) {
             const count = GameState.buildings[building.id].count;
             return BigInt(Math.floor(Number(building.baseCost) * DIFFICULTY_MULTIPLIER * Math.pow(building.multiplier, Number(count))));
+        }
+
+        function calculateBuildingSellValue(building) {
+            const count = GameState.buildings[building.id].count;
+            if (count <= 0n) return 0n;
+            const previousIndex = Number(count - 1n);
+            const lastPaidCost = Number(building.baseCost) * DIFFICULTY_MULTIPLIER * Math.pow(building.multiplier, previousIndex);
+            return BigInt(Math.floor(lastPaidCost * 0.6));
         }
 
         function calculateBuildingProduction(building) {
@@ -1673,7 +2293,10 @@
                 }
             });
 
-            production = BigInt(Math.floor(Number(production) * globalMultiplier * getGlobalProductionMultiplier()));
+            production = BigInt(Math.floor(Number(production) * globalMultiplier * getGlobalProductionMultiplier() * talentBonus('hardwareEfficiency', 0.05)));
+            if (GameState.solarStorm.active && GameState.solarStorm.impactMode === 'production') {
+                production = BigInt(Math.floor(Number(production) * GameState.solarStorm.productionMultiplier));
+            }
 
             if (GameState.skills.dnsAmplification.active) {
                 const level = GameState.skills.dnsAmplification.level;
@@ -1688,7 +2311,7 @@
             }
 
             if (GameState.consumables.bandwidth_boost.activeBoost) {
-                production = production * 3n;
+                production = production * 2n;
             }
 
             if (GameState.temperature.productionPenalty > 0) {
@@ -1712,6 +2335,16 @@
             BUILDINGS.forEach(building => {
                 total += calculateBuildingProduction(building);
             });
+            return total;
+        }
+
+        function calculateMiningBandwidth() {
+            let total = 0n;
+            BUILDINGS.forEach(building => {
+                const count = GameState.buildings[building.id].count;
+                total += building.baseProduction * count;
+            });
+            total = BigInt(Math.floor(Number(total) * talentBonus('hardwareEfficiency', 0.05)));
             return total;
         }
 
@@ -1797,11 +2430,12 @@
             }
 
             if (GameState.consumables.bandwidth_boost.activeBoost) {
-                gain = gain * 3n;
+                gain = gain * 2n;
             }
 
             gain = BigInt(Math.floor(Number(gain) * getGlobalProductionMultiplier()));
 
+            gain = BigInt(Math.floor(Number(gain) * talentBonus('redPayload', 0.06)));
             return gain;
         }
 
@@ -1819,7 +2453,7 @@
             GameState.totalPackets += packetCount;
             
             addLog(`$ ping -c ${safeCount} 8.8.8.8 → +${formatNumber(totalGain)}`, 'success');
-            updateDisplay();
+            updateDisplay(false);
         }
 
         function buyBuilding(buildingId) {
@@ -1830,11 +2464,25 @@
                 GameState.data -= cost;
                 GameState.buildings[building.id].count += 1n;
                 addLog(`$ systemctl start ${building.name.toLowerCase().replace(/\s+/g, '-')} [OK]`, 'success');
-                updateDisplay();
+                updateDisplay(false);
                 saveGame();
             } else {
                 addLog(`$ ERROR: Insufficient data (need ${formatNumber(cost)})`, 'error');
             }
+        }
+
+        function sellBuilding(buildingId) {
+            const building = BUILDINGS.find(b => b.id === buildingId);
+            if (!building || GameState.buildings[building.id].count <= 0n) {
+                return;
+            }
+
+            const refund = calculateBuildingSellValue(building);
+            GameState.buildings[building.id].count -= 1n;
+            GameState.data += refund;
+            addLog(`$ Sold ${building.name} for ${formatNumber(refund)} data`, 'warning');
+            updateDisplay(false);
+            saveGame();
         }
 
         function buyUpgrade(upgradeId) {
@@ -1849,7 +2497,7 @@
                 GameState.data -= upgradeCost;
                 GameState.upgrades[upgrade.id].purchased = true;
                 addLog(`$ apt-get install ${upgrade.name.toLowerCase().replace(/\s+/g, '-')} [INSTALLED]`, 'info');
-                updateDisplay();
+                updateDisplay(false);
                 saveGame();
             } else {
                 addLog(`$ ERROR: Insufficient data (need ${formatNumber(upgradeCost)})`, 'error');
@@ -1864,7 +2512,7 @@
                 GameState.data -= consumableCost;
                 GameState.consumables[consumable.id].count += 1n;
                 addLog(`$ Purchased ${consumable.name} [+1]`, 'info');
-                updateDisplay();
+                updateDisplay(false);
                 saveGame();
             } else {
                 addLog(`$ ERROR: Insufficient data (need ${formatNumber(consumableCost)})`, 'error');
@@ -1920,10 +2568,17 @@
                     break;
 
                 case 'boost':
+                    if (Date.now() < GameState.boosterCooldownUntil) {
+                        GameState.consumables[consumableId].count += 1n;
+                        const remain = Math.ceil((GameState.boosterCooldownUntil - Date.now()) / 1000);
+                        addLog(`$ Booster cooling down (${remain}s remaining)`, 'warning');
+                        break;
+                    }
                     GameState.consumables.bandwidth_boost.activeBoost = {
-                        endTime: Date.now() + consumable.duration
+                        endTime: Date.now() + 20000
                     };
-                    addLog(`$ Bandwidth booster activated [x3 for 30s]`, 'warning');
+                    GameState.boosterCooldownUntil = Date.now() + 90000;
+                    addLog(`$ Bandwidth booster activated [x2 for 20s]`, 'warning');
                     break;
 
                 case 'shield':
@@ -1935,22 +2590,47 @@
                     break;
             }
 
-            updateDisplay();
+            updateDisplay(false);
+            saveGame();
+        }
+
+        function levelTalent(talentId, cost, maxLevel) {
+            if (GameState.talents[talentId] >= maxLevel) return;
+            if (getAvailableTalentPoints() < cost) {
+                addLog(`$ Not enough talent points`, 'warning');
+                return;
+            }
+            GameState.talents[talentId] += 1;
+            addLog(`$ Talent upgraded: ${talentId} -> ${GameState.talents[talentId]}`, 'success');
+            updateDisplay(false);
             saveGame();
         }
 
         function buyBlackMarketItem(itemId) {
             const item = BLACK_MARKET_ITEMS.find(i => i.id === itemId);
             if (GameState.blackMarket[itemId].purchased) return;
-            if (GameState.crypto < item.costCrypto) {
-                addLog(`$ ERROR: Need ${item.costCrypto.toFixed(2)} XMR`, 'error');
+
+            const antivirusOrder = ['antivirus_l1', 'antivirus_l2', 'antivirus_l3', 'antivirus_l4'];
+            if (antivirusOrder.includes(itemId)) {
+                const idx = antivirusOrder.indexOf(itemId);
+                if (idx > 0 && !GameState.blackMarket[antivirusOrder[idx - 1]].purchased) {
+                    addLog(`$ ERROR: Install Antivirus L${idx} first`, 'error');
+                    return;
+                }
+            }
+            const itemCost = calculateBlackMarketCost(item);
+            if (GameState.crypto < itemCost) {
+                addLog(`$ ERROR: Need ${itemCost.toFixed(2)} XMR`, 'error');
                 return;
             }
 
-            GameState.crypto -= item.costCrypto;
+            GameState.crypto -= itemCost;
             GameState.blackMarket[itemId].purchased = true;
+            if (item.id === 'grid_hijack') GameState.energy.hackedGridBonus += 1800;
+            if (item.id === 'diesel_backup') GameState.energy.backupGenerator = true;
+            if (item.id === 'honeypot_core') GameState.honeypot.nextIntelAt = Date.now() + 300000;
             addLog(`$ Black Market acquired: ${item.name}`, 'warning');
-            updateDisplay();
+            updateDisplay(false);
             saveGame();
         }
 
@@ -1979,7 +2659,7 @@
             skill.level = nextLevel;
             
             addLog(`$ ${skillId} upgraded to level ${nextLevel} [ENHANCED]`, 'success');
-            updateDisplay();
+            updateDisplay(false);
             saveGame();
         }
 
@@ -2006,10 +2686,10 @@
             setTimeout(() => {
                 skill.active = false;
                 addLog(`$ DNS Amplification boost expired`, 'info');
-                updateDisplay();
+                updateDisplay(false);
             }, skill.duration);
 
-            updateDisplay();
+            updateDisplay(false);
         }
 
         function activateBroadcastStorm() {
@@ -2035,7 +2715,7 @@
             
             const multiplier = skill.multiplier + (skill.level - 1) * 5;
             addLog(`$ ifconfig eth0 broadcast 255.255.255.255 [x${multiplier} BOOST - RISK MODE]`, 'error');
-            updateDisplay();
+            updateDisplay(false);
         }
 
         function activatePacketInjection() {
@@ -2061,21 +2741,34 @@
             setTimeout(() => {
                 skill.active = false;
                 addLog(`$ Packet Injection expired`, 'info');
-                updateDisplay();
+                updateDisplay(false);
             }, skill.duration);
 
-            updateDisplay();
+            updateDisplay(false);
         }
 
 
         function triggerRivalAttack() {
             if (GameState.rivalAttack.active) return;
 
+            if (GameState.blackMarket.intrusion_ai?.purchased) {
+                const fakeIp = `185.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                GameState.knownAttackerIps.unshift(fakeIp);
+                GameState.knownAttackerIps = [...new Set(GameState.knownAttackerIps)].slice(0, 20);
+                addLog(`$ Auto intrusion defense blocked attacker (${fakeIp})`, 'success');
+                if (GameState.blackMarket.hunter_counter?.purchased && Math.random() < 0.25) {
+                    GameState.buildings.dedicated_server.count += 1n;
+                    addLog(`$ Counter-hack loot: +1 Dedicated Server`, 'success');
+                }
+                return;
+            }
+
             GameState.rivalAttack.active = true;
             GameState.rivalAttack.endTime = Date.now() + 12000;
             const defenses = ['firewall', 'traceback', 'null_route'];
             GameState.rivalAttack.expectedCommand = defenses[Math.floor(Math.random() * defenses.length)];
-            addLog(`$ INTRUSION DETECTED - execute '${GameState.rivalAttack.expectedCommand}' in 12s or lose funds`, 'error', true);
+            addLog(`$ INTRUSION DETECTED - execute '${GameState.rivalAttack.expectedCommand}' in 12s`, 'error', true);
+            spawnMaliciousFile('intrusion');
         }
 
         function resolveRivalAttack(success) {
@@ -2083,30 +2776,45 @@
             GameState.rivalAttack.active = false;
             if (success) {
                 addLog(`$ Rival hacker repelled successfully`, 'success');
+                if (Math.random() < 0.35) {
+                    for (const key of ['data_center','fiber_backbone','dedicated_server']) {
+                        if (GameState.buildings[key].count > 0n) {
+                            GameState.buildings[key].count -= 1n;
+                            addLog(`$ Residual sabotage: -1 ${key.replace('_', ' ')}`, 'warning');
+                            break;
+                        }
+                    }
+                }
             } else {
-                const theft = BigInt(Math.floor(Number(GameState.data) * 0.12 * getHackLossMultiplier()));
-                GameState.data = GameState.data > theft ? GameState.data - theft : 0n;
-                addLog(`$ Rival breach succeeded - lost ${formatNumber(theft)}`, 'error');
+                const hitCrypto = Math.random() < 0.45;
+                const ratio = 0.5 + Math.random() * 0.5;
+                if (hitCrypto && GameState.crypto > 0) {
+                    const loss = GameState.crypto * ratio;
+                    GameState.crypto = Math.max(0, GameState.crypto - loss);
+                    addLog(`$ Rival breach succeeded - lost ${loss.toFixed(2)} XMR`, 'error');
+                } else {
+                    const theft = BigInt(Math.floor(Number(GameState.data) * ratio * getHackLossMultiplier() * (1 - GameState.talents.blueShield * 0.06)));
+                    GameState.data = GameState.data > theft ? GameState.data - theft : 0n;
+                    addLog(`$ Rival breach succeeded - lost ${formatNumber(theft)}`, 'error');
+                }
+                spawnMaliciousFile('failed_defense');
             }
         }
 
         function startRandomContract() {
-            if (GameState.contract.active) {
-                addLog(`$ ERROR: Contract already active`, 'warning');
-                return;
-            }
+            openContractBoard();
+        }
 
-            const pool = GameState.contract.pool;
-            const contract = pool[Math.floor(Math.random() * pool.length)];
-            GameState.contract.active = {
-                ...contract,
-                startTime: Date.now(),
-                startData: GameState.data,
-                startPackets: GameState.totalPackets,
-                startCrashes: GameState.contract.stats.crashes
-            };
-
-            addLog(`$ >>> CONTRACT OFFER ACCEPTED: ${contract.name} <<<`, 'warning');
+        function getContractStageProgress(c) {
+            const stage = c.stages[c.stageIndex];
+            if (!stage) return true;
+            if (stage.type === 'data') return (GameState.data - c.stageStartData) >= stage.goal;
+            if (stage.type === 'packets') return (GameState.totalPackets - c.stageStartPackets) >= stage.goal;
+            if (stage.type === 'crashes') return (GameState.contract.stats.crashes - c.stageStartCrashes) >= stage.goal;
+            if (stage.type === 'blackouts') return (GameState.contract.stats.blackouts - c.stageStartBlackouts) >= stage.goal;
+            if (stage.type === 'crypto') return (GameState.crypto - c.stageStartCrypto) >= stage.goal;
+            if (stage.type === 'bandwidth') return calculateTotalBandwidth() >= stage.goal;
+            return false;
         }
 
         function checkContractProgress() {
@@ -2114,20 +2822,24 @@
             const c = GameState.contract.active;
             const elapsed = Date.now() - c.startTime;
 
-            let progress = 0n;
-            if (c.goalType === 'data') progress = GameState.data - c.startData;
-            if (c.goalType === 'packets') progress = GameState.totalPackets - c.startPackets;
-            if (c.goalType === 'crashes') progress = GameState.contract.stats.crashes - c.startCrashes;
+            if (getContractStageProgress(c)) {
+                c.stageIndex += 1;
+                c.stageStartData = GameState.data;
+                c.stageStartPackets = GameState.totalPackets;
+                c.stageStartCrypto = GameState.crypto;
+                c.stageStartCrashes = GameState.contract.stats.crashes;
+                c.stageStartBlackouts = GameState.contract.stats.blackouts;
 
-            if (progress >= c.goal) {
-                GameState.crypto += c.rewardCrypto;
-                if (c.rewardSkin) {
-                    addLog(`$ Contract complete: +${c.rewardCrypto.toFixed(2)} XMR + terminal skin '${c.rewardSkin}' unlocked`, 'success');
-                } else {
-                    addLog(`$ Contract complete: +${c.rewardCrypto.toFixed(2)} XMR`, 'success');
+                if (c.stageIndex >= c.stages.length) {
+                    GameState.crypto += c.rewards.crypto;
+                    GameState.factions[c.faction].reputation += c.rewards.reputation;
+                    GameState.contract.stats.completed += 1n;
+                    addLog(`$ Contract complete: +${c.rewards.crypto.toFixed(2)} XMR +${c.rewards.reputation} rep (${c.faction})`, 'success');
+                    GameState.contract.active = null;
+                    return;
                 }
-                GameState.contract.active = null;
-                return;
+
+                addLog(`$ Contract stage ${c.stageIndex}/${c.stages.length} completed`, 'info');
             }
 
             if (elapsed >= c.durationMs) {
@@ -2136,7 +2848,49 @@
             }
         }
 
+        function getPrestigeStatus() {
+            const checks = [
+                {
+                    label: `Complete ${PRESTIGE_REQUIREMENTS.contractsCompleted} contract(s)`,
+                    met: GameState.contract.stats.completed >= PRESTIGE_REQUIREMENTS.contractsCompleted
+                },
+                {
+                    label: `Reach ${PRESTIGE_REQUIREMENTS.factionReputation}+ reputation with one faction`,
+                    met: Object.values(GameState.factions).some(f => f.reputation >= PRESTIGE_REQUIREMENTS.factionReputation)
+                },
+                {
+                    label: `Get one skill to level ${PRESTIGE_REQUIREMENTS.skillLevel}+`,
+                    met: Object.values(GameState.skills).some(skill => skill.level >= PRESTIGE_REQUIREMENTS.skillLevel)
+                },
+                {
+                    label: `Hold at least ${PRESTIGE_REQUIREMENTS.crypto} XMR`,
+                    met: GameState.crypto >= PRESTIGE_REQUIREMENTS.crypto
+                },
+                {
+                    label: `Reach ${PRESTIGE_REQUIREMENTS.packets} total packets`,
+                    met: GameState.totalPackets >= PRESTIGE_REQUIREMENTS.packets
+                }
+            ];
+
+            const completed = checks.filter(c => c.met).length;
+            return {
+                checks,
+                completed,
+                needed: PRESTIGE_REQUIREMENTS.minChecks,
+                eligible: completed >= PRESTIGE_REQUIREMENTS.minChecks
+            };
+        }
+
         function performPrestige() {
+            const status = getPrestigeStatus();
+            if (!status.eligible) {
+                addLog(`$ Prestige locked: ${status.completed}/${status.needed} requirements met`, 'error');
+                status.checks.forEach((check, idx) => {
+                    addLog(`  [${check.met ? 'x' : ' '}] ${idx + 1}. ${check.label}`, check.met ? 'success' : 'warning');
+                });
+                return;
+            }
+
             const coresGained = BigInt(Math.max(1, Math.floor(Math.sqrt(Number(GameState.totalPackets)) / 100)));
             GameState.processorCores += coresGained;
             GameState.data = 0n;
@@ -2144,6 +2898,11 @@
             GameState.crypto = 0;
             GameState.contract.active = null;
             GameState.contract.stats.crashes = 0n;
+            GameState.contract.stats.blackouts = 0n;
+            GameState.contract.stats.completed = 0n;
+            GameState.packetsFromAutomation = 0n;
+            GameState.boosterCooldownUntil = 0;
+            GameState.story.unlocked = ['boot_sequence'];
 
             Object.keys(GameState.buildings).forEach(key => GameState.buildings[key].count = 0n);
             Object.keys(GameState.upgrades).forEach(key => GameState.upgrades[key].purchased = false);
@@ -2163,7 +2922,7 @@
             GameState.skills.packetInjection.active = false;
 
             addLog(`$ FORMAT COMPLETE -> ROOTKIT INSTALLED. +${coresGained} processor core(s) permanent`, 'warning');
-            updateDisplay();
+            updateDisplay(false);
             saveGame();
         }
 
@@ -2177,6 +2936,7 @@
             GameState.lastTick = now;
 
             updateTemperature(deltaTime);
+            applyEnergyState();
 
             Object.keys(GameState.skills).forEach(skillId => {
                 const skill = GameState.skills[skillId];
@@ -2211,10 +2971,10 @@
 
             const nowAttack = Date.now();
             if (!GameState.rivalAttack.active && nowAttack >= GameState.rivalAttack.nextAttackCheck) {
-                if (Math.random() < 0.2) {
+                if (Math.random() < 0.32) {
                     triggerRivalAttack();
                 }
-                GameState.rivalAttack.nextAttackCheck = nowAttack + 90000 + Math.random() * 120000;
+                GameState.rivalAttack.nextAttackCheck = nowAttack + 70000 + Math.random() * 90000;
             }
 
             if (GameState.rivalAttack.active && nowAttack >= GameState.rivalAttack.endTime) {
@@ -2222,6 +2982,26 @@
             }
 
             checkContractProgress();
+            if (GameState.blackMarket.honeypot_core?.purchased && Date.now() >= GameState.honeypot.nextIntelAt) {
+                const ip = `91.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                GameState.knownAttackerIps.unshift(ip);
+                GameState.knownAttackerIps = [...new Set(GameState.knownAttackerIps)].slice(0, 20);
+                GameState.honeypot.nextIntelAt = Date.now() + 300000;
+                addLog(`$ Honeypot captured attacker intel: ${ip}`, 'info');
+            }
+            evaluateMaliciousFiles();
+
+            if (!GameState.solarStorm.active && now >= GameState.solarStorm.nextCheck) {
+                if (Math.random() < 0.2) triggerSolarStorm();
+                GameState.solarStorm.nextCheck = now + 140000 + Math.random() * 120000;
+            }
+            if (GameState.solarStorm.active && now >= GameState.solarStorm.endTime) {
+                GameState.solarStorm.active = false;
+                GameState.solarStorm.impactMode = 'production';
+                GameState.solarStorm.productionMultiplier = 0.7;
+                GameState.solarStorm.wattsMultiplier = 1.25;
+                addLog(`$ Solar storm dissipated`, 'info');
+            }
 
             if (GameState.skills.broadcastStorm.crashed) {
                 const crashElapsed = now - GameState.skills.broadcastStorm.crashTime;
@@ -2251,36 +3031,57 @@
                 }
             }
 
-            if (!GameState.skills.broadcastStorm.crashed) {
+            if (!GameState.skills.broadcastStorm.crashed && !GameState.energy.blackout) {
                 const bandwidth = calculateTotalBandwidth();
                 const gain = BigInt(Math.floor(Number(bandwidth) * deltaTime));
                 if (gain > 0n) {
                     if (GameState.miningMode === 'crypto') {
-                        GameState.crypto += (Number(gain) / 5000) * getCryptoMultiplier();
+                        const miningBw = calculateMiningBandwidth();
+                        GameState.crypto += (Number(miningBw) / 24000) * getCryptoMultiplier() * deltaTime;
                     } else {
                         GameState.data += gain;
                     }
+
+                    let passivePackets = BigInt(Math.floor(Number(gain) / 300));
+                    if (GameState.blackMarket.packet_compiler?.purchased) {
+                        passivePackets += BigInt(Math.floor(Number(gain) / 180));
+                    }
+                    if (passivePackets > 0n) {
+                        GameState.totalPackets += passivePackets;
+                        GameState.packetsFromAutomation += passivePackets;
+                    }
                 }
+            }
+
+            if (GameState.totalPackets >= 25000n) {
+                unlockStoryLog('architect_note');
+            }
+            if (GameState.crypto >= 8) {
+                unlockStoryLog('rival_manifest');
+            }
+            if (GameState.contract.stats.crashes >= 2n) {
+                unlockStoryLog('blackout_protocol');
             }
 
             if (now - GameState.lastSave > 10000) {
                 saveGame();
             }
 
-            updateDisplay();
+            updateDisplay(false);
         }
 
         // ============================================
         // UI UPDATE (continuing from previous - identical except temp display)
         // ============================================
 
-        function updateDisplay() {
+        function updateDisplay(rebuildPanels = true) {
             document.getElementById('data-display').textContent = formatNumber(GameState.data);
             document.getElementById('bandwidth-display').textContent = formatNumber(calculateTotalBandwidth()) + '/s';
             document.getElementById('packets-display').textContent = GameState.totalPackets.toString();
             document.getElementById('crypto-display').textContent = GameState.crypto.toFixed(2) + ' XMR';
             document.getElementById('cores-display').textContent = GameState.processorCores.toString();
             document.getElementById('mode-display').textContent = GameState.miningMode.toUpperCase();
+            document.getElementById('watts-display').textContent = `${GameState.energy.currentWatts} / ${GameState.energy.capacityWatts} W`;
             
             const uptime = Math.floor((Date.now() - GameState.startTime) / 1000);
             document.getElementById('uptime-display').textContent = formatTime(uptime);
@@ -2318,6 +3119,16 @@
                 fill.style.width = GameState.skills.broadcastStorm.instability + '%';
             }
 
+            if (!rebuildPanels) {
+                const nowRender = Date.now();
+                if (nowRender - GameState.uiRender.lastPanelRender < 250) {
+                    return;
+                }
+                GameState.uiRender.lastPanelRender = nowRender;
+            } else {
+                GameState.uiRender.lastPanelRender = Date.now();
+            }
+
             // Update buildings (same as v3)
             const buildingsContainer = document.getElementById('buildings-container');
             buildingsContainer.innerHTML = '';
@@ -2325,13 +3136,18 @@
                 const cost = calculateBuildingCost(building);
                 const count = GameState.buildings[building.id].count;
                 const production = calculateBuildingProduction(building);
+                const sellValue = calculateBuildingSellValue(building);
                 const canAfford = GameState.data >= cost;
 
-                const btn = document.createElement('button');
-                btn.className = 'action-btn';
-                btn.disabled = !canAfford;
-                btn.onclick = () => buyBuilding(building.id);
-                btn.innerHTML = `
+                const card = document.createElement('div');
+                card.style.display = 'flex';
+                card.style.gap = '8px';
+
+                const buyBtn = document.createElement('button');
+                buyBtn.className = 'action-btn';
+                buyBtn.disabled = !canAfford;
+                buyBtn.onclick = () => buyBuilding(building.id);
+                buyBtn.innerHTML = `
                     <div class="btn-info">
                         <span class="btn-name">${building.name}</span>
                         <span class="btn-count">[${count}]</span>
@@ -2339,7 +3155,17 @@
                     <div class="btn-cost">Cost: ${formatNumber(cost)}</div>
                     ${count > 0 ? `<div class="btn-production">+${formatNumber(production)}/s</div>` : ''}
                 `;
-                buildingsContainer.appendChild(btn);
+
+                const sellBtn = document.createElement('button');
+                sellBtn.className = 'upgrade-btn';
+                sellBtn.style.maxWidth = '110px';
+                sellBtn.disabled = count <= 0n;
+                sellBtn.onclick = () => sellBuilding(building.id);
+                sellBtn.innerHTML = `<div class="btn-name">SELL</div><div class="btn-cost">+${formatNumber(sellValue)}</div>`;
+
+                card.appendChild(buyBtn);
+                card.appendChild(sellBtn);
+                buildingsContainer.appendChild(card);
             });
 
             // Update upgrades (same as v3)
@@ -2384,7 +3210,7 @@
                     </div>
                     <div class="btn-cost">Cost: ${formatNumber(consumableCost)}</div>
                     <div style="color: #666; font-size: 11px; margin-top: 2px;">${consumable.description}</div>
-                    ${count > 0 ? `<button onclick="event.stopPropagation(); useConsumable('${consumable.id}')" style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #4488ff; color: #4488ff; border-radius: 2px; cursor: pointer; font-size: 11px;">USE</button>` : ''}
+                    ${count > 0 && consumable.effect !== 'unlock_targets' ? `<button onclick="event.stopPropagation(); useConsumable('${consumable.id}')" style="margin-top: 4px; padding: 4px 8px; background: #2a2a2a; border: 1px solid #4488ff; color: #4488ff; border-radius: 2px; cursor: pointer; font-size: 11px;">USE</button>` : ''}
                 `;
                 consumablesContainer.appendChild(btn);
             });
@@ -2486,35 +3312,41 @@
             skillsContainer.appendChild(dnsBtn);
 
 
-            const blackMarketContainer = document.getElementById('blackmarket-container');
-            blackMarketContainer.innerHTML = '';
-            BLACK_MARKET_ITEMS.forEach(item => {
-                const purchased = GameState.blackMarket[item.id].purchased;
-                const canAfford = GameState.crypto >= item.costCrypto;
-                const btn = document.createElement('button');
-                btn.className = 'upgrade-btn';
-                btn.disabled = purchased || !canAfford;
-                btn.onclick = () => buyBlackMarketItem(item.id);
-                btn.innerHTML = `
-                    <div class="btn-info">
-                        <span class="btn-name">${item.name}</span>
-                        ${purchased ? '<span class="btn-count">[✓]</span>' : ''}
-                    </div>
-                    ${!purchased ? `<div class="btn-cost">Cost: ${item.costCrypto.toFixed(2)} XMR</div>` : ''}
-                    <div style="color: #666; font-size: 11px; margin-top: 2px;">${item.description}</div>
-                `;
-                blackMarketContainer.appendChild(btn);
+            const contractSummary = document.getElementById('contract-summary');
+            if (contractSummary) {
+                contractSummary.textContent = `Active: ${GameState.contract.active ? GameState.contract.active.name : 'none'} | Factions => GW ${GameState.factions.ghostwire.reputation}, BF ${GameState.factions.blackflag.reputation}, OC ${GameState.factions.overclock.reputation}`;
+            }
+
+            const talentsContainer = document.getElementById('talents-container');
+            talentsContainer.innerHTML = '';
+            const points = getAvailableTalentPoints();
+            const pInfo = document.createElement('div');
+            pInfo.style.color = '#ffaa00';
+            pInfo.style.padding = '8px 0';
+            pInfo.textContent = `Available talent points: ${points} | Gain more by using prestige to earn processor cores.`;
+            talentsContainer.appendChild(pInfo);
+            Object.entries(TALENT_TREE).forEach(([branch, talents]) => {
+                talents.forEach(t => {
+                    const current = GameState.talents[t.id];
+                    const btn = document.createElement('button');
+                    btn.className = 'upgrade-btn';
+                    btn.disabled = current >= t.max || points < t.cost;
+                    btn.onclick = () => levelTalent(t.id, t.cost, t.max);
+                    btn.innerHTML = `<div class="btn-info"><span class="btn-name">${branch.toUpperCase()} :: ${t.name}</span><span class="btn-count">[${current}/${t.max}]</span></div><div style="color:#666;font-size:11px;">${t.desc}</div>`;
+                    talentsContainer.appendChild(btn);
+                });
             });
 
             // Broadcast Storm skill
+
             const stormSkill = GameState.skills.broadcastStorm;
             const stormNextLevel = stormSkill.level + 1;
             const stormReq = stormSkill.level < stormSkill.maxLevel ? getSkillRequirement('broadcastStorm', stormNextLevel - 1) : null;
 
             const stormBtn = document.createElement('button');
             stormBtn.className = `skill-btn ${stormSkill.level > 0 ? 'unlocked' : ''}`;
-            stormBtn.disabled = stormSkill.level === 0 || stormSkill.crashed;
-            stormBtn.onclick = stormSkill.level > 0 ? activateBroadcastStorm : null;
+            stormBtn.disabled = stormSkill.crashed;
+            stormBtn.onclick = stormSkill.level > 0 ? activateBroadcastStorm : () => upgradeSkill('broadcastStorm');
 
             let stormHtml = `
                 <div class="skill-level">LVL ${stormSkill.level}/${stormSkill.maxLevel}</div>
@@ -2525,6 +3357,10 @@
                     ${stormSkill.level > 0 ? `x${stormSkill.multiplier + (stormSkill.level - 1) * 5} production (risk of crash)` : 'LOCKED'}
                 </div>
             `;
+
+            if (stormSkill.level === 0) {
+                stormHtml += `<div class="requirement-text">Unlock: requires bandwidth/packets gate</div>`;
+            }
 
             if (stormReq) {
                 const bandwidthMet = bandwidth >= stormReq.bandwidth;
@@ -2561,8 +3397,8 @@
 
             const injectBtn = document.createElement('button');
             injectBtn.className = `skill-btn ${injectSkill.level > 0 ? 'unlocked' : ''}`;
-            injectBtn.disabled = injectSkill.level === 0 || injectSkill.cooldown > 0;
-            injectBtn.onclick = injectSkill.level > 0 ? activatePacketInjection : null;
+            injectBtn.disabled = injectSkill.cooldown > 0;
+            injectBtn.onclick = injectSkill.level > 0 ? activatePacketInjection : () => upgradeSkill('packetInjection');
 
             let injectHtml = `
                 <div class="skill-level">LVL ${injectSkill.level}/${injectSkill.maxLevel}</div>
@@ -2573,6 +3409,10 @@
                     ${injectSkill.level > 0 ? `x${injectSkill.clickMultiplier + (injectSkill.level - 1) * 3} manual ping gain for 15s` : 'LOCKED'}
                 </div>
             `;
+
+            if (injectSkill.level === 0) {
+                injectHtml += `<div class="requirement-text">Unlock: requires bandwidth/packets gate</div>`;
+            }
 
             if (injectReq) {
                 const bandwidthMet = bandwidth >= injectReq.bandwidth;
@@ -2631,7 +3471,17 @@
                 crypto: GameState.crypto,
                 processorCores: GameState.processorCores.toString(),
                 blackMarket: GameState.blackMarket,
-                contractStats: { crashes: GameState.contract.stats.crashes.toString() }
+                contractStats: { crashes: GameState.contract.stats.crashes.toString(), blackouts: GameState.contract.stats.blackouts.toString(), completed: GameState.contract.stats.completed.toString() },
+                packetsFromAutomation: GameState.packetsFromAutomation.toString(),
+                boosterCooldownUntil: GameState.boosterCooldownUntil,
+                storyUnlocked: GameState.story.unlocked,
+                talents: GameState.talents,
+                factions: GameState.factions,
+                energy: { hackedGridBonus: GameState.energy.hackedGridBonus, backupGenerator: GameState.energy.backupGenerator },
+                files: GameState.files.filter(f => f.type === 'malicious'),
+                solarStorm: GameState.solarStorm,
+                knownAttackerIps: GameState.knownAttackerIps,
+                honeypot: GameState.honeypot
             };
 
             Object.keys(GameState.buildings).forEach(key => {
@@ -2715,6 +3565,19 @@
                     });
                 }
                 if (data.contractStats?.crashes) GameState.contract.stats.crashes = BigInt(data.contractStats.crashes);
+                if (data.contractStats?.blackouts) GameState.contract.stats.blackouts = BigInt(data.contractStats.blackouts);
+                if (data.contractStats?.completed) GameState.contract.stats.completed = BigInt(data.contractStats.completed);
+                if (data.packetsFromAutomation) GameState.packetsFromAutomation = BigInt(data.packetsFromAutomation);
+                if (data.boosterCooldownUntil) GameState.boosterCooldownUntil = data.boosterCooldownUntil;
+                if (Array.isArray(data.storyUnlocked)) GameState.story.unlocked = data.storyUnlocked.filter(k => STORY_LOGS[k]);
+                if (data.talents) { Object.keys(GameState.talents).forEach(k => { if (typeof data.talents[k] === 'number') GameState.talents[k] = data.talents[k]; }); }
+                if (data.factions) { Object.keys(GameState.factions).forEach(k => { if (data.factions[k]?.reputation !== undefined) GameState.factions[k].reputation = data.factions[k].reputation; }); }
+                if (data.energy) { if (typeof data.energy.hackedGridBonus === 'number') GameState.energy.hackedGridBonus = data.energy.hackedGridBonus; if (typeof data.energy.backupGenerator === 'boolean') GameState.energy.backupGenerator = data.energy.backupGenerator; }
+                if (Array.isArray(data.files)) GameState.files = data.files;
+                if (data.solarStorm) GameState.solarStorm = { ...GameState.solarStorm, ...data.solarStorm };
+                if (Array.isArray(data.knownAttackerIps)) GameState.knownAttackerIps = data.knownAttackerIps;
+                if (data.honeypot) GameState.honeypot = { ...GameState.honeypot, ...data.honeypot };
+                refreshSystemFiles();
 
                 const savedTheme = data.uiTheme || localStorage.getItem('swamped_theme') || 'default';
                 applyTheme(savedTheme, false);
@@ -2745,7 +3608,7 @@
         let historyIndex = -1;
 
         function getSupportedCommands() {
-            return ['ping', 'help', 'stats', 'temp', 'save', 'clear', 'reset', 'theme', 'mine', 'prestige', 'contract', 'firewall', 'traceback', 'null_route', ...GameState.temperature.qteCommands];
+            return ['ping', 'help', 'stats', 'temp', 'save', 'clear', 'reset', 'theme', 'mine', 'prestige', 'contract', 'contracts', 'market', 'map', 'talents', 'story', 'history', 'ls', 'rm', 'hireintel', 'counter', 'firewall', 'traceback', 'null_route', ...GameState.temperature.qteCommands];
         }
 
         function autocompleteCommand(input) {
@@ -2819,8 +3682,17 @@
                     addLog(`  theme [name]   - Switch terminal theme (default/mono/pink/amber)`, 'info');
                     addLog(`  theme list     - Show available themes`, 'info');
                     addLog(`  mine [data|crypto] - Toggle mining mode`, 'info');
-                    addLog(`  prestige       - Reboot for permanent processor cores`, 'info');
-                    addLog(`  contract       - Accept random mission`, 'info');
+                    addLog(`  prestige       - Reboot for permanent processor cores (requires 3/5 objectives)`, 'info');
+                    addLog(`  contract       - Open contract board popup`, 'info');
+                    addLog(`  market         - Open black market popup`, 'info');
+                    addLog(`  map            - Open ASCII world map popup`, 'info');
+                    addLog(`  talents        - Show available talent points`, 'info');
+                    addLog(`  story [id]     - Read unlocked narrative files`, 'info');
+                    addLog(`  ls             - List local files`, 'info');
+                    addLog(`  rm <file>      - Remove file`, 'info');
+                    addLog(`  hireintel      - Pay hacker for attacker intel`, 'info');
+                    addLog(`  counter <ip>   - Attempt counter attack`, 'info');
+                    addLog(`  history        - Show command history`, 'info');
                     addLog(`  stats          - Show current statistics`, 'info');
                     addLog(`  temp           - Check temperature status`, 'info');
                     addLog(`  save           - Manually save game`, 'info');
@@ -2840,10 +3712,18 @@
                     addLog(`Skills: DNS L${GameState.skills.dnsAmplification.level}, Storm L${GameState.skills.broadcastStorm.level}, Inject L${GameState.skills.packetInjection.level}`, 'info');
                     const compromised = Object.values(GameState.targets).filter(t => t.compromised).length;
                     addLog(`Compromised targets: ${compromised}/${SOCIAL_TARGETS.length}`, 'info');
-                    addLog(`Difficulty scaling: +20% costs (packet requirements unchanged)`, 'warning');
+                    addLog(`Difficulty scaling: +35% costs (packet requirements unchanged)`, 'warning');
                     addLog(`Crypto: ${GameState.crypto.toFixed(2)} XMR | Processor cores: ${GameState.processorCores}`, 'info');
                     addLog(`Mining mode: ${GameState.miningMode.toUpperCase()}`, 'info');
                     addLog(`Contract active: ${GameState.contract.active ? GameState.contract.active.name : 'none'}`, 'info');
+                    addLog(`Passive packets: ${GameState.packetsFromAutomation} (auto-generated)`, 'info');
+                    addLog(`Power: ${GameState.energy.currentWatts}/${GameState.energy.capacityWatts}W | Blackout: ${GameState.energy.blackout ? 'ACTIVE' : 'offline'}`, 'info');
+                    addLog(`Faction reps => GW ${GameState.factions.ghostwire.reputation}, BF ${GameState.factions.blackflag.reputation}, OC ${GameState.factions.overclock.reputation}`, 'info');
+                    const prestigeStatus = getPrestigeStatus();
+                    addLog(`Prestige progress: ${prestigeStatus.completed}/${prestigeStatus.needed} objectives`, prestigeStatus.eligible ? 'success' : 'warning');
+                    addLog(`Files: ${GameState.files.length} total (${GameState.files.filter(f => f.type === 'malicious').length} malicious)`, 'info');
+                    addLog(`Known attacker IPs: ${GameState.knownAttackerIps.length}`, 'info');
+                    addLog(`Antivirus level: L${getAntivirusLevel()}`, 'info');
                 },
                 'temp': () => {
                     const temp = Math.floor(GameState.temperature.current);
@@ -2882,9 +3762,16 @@
                     }
                     GameState.miningMode = arg;
                     addLog(`Mining mode switched to ${arg.toUpperCase()}`, 'success');
-                    updateDisplay();
+                    updateDisplay(false);
                 },
                 'prestige': () => {
+                    const prestigeStatus = getPrestigeStatus();
+                    if (!prestigeStatus.eligible) {
+                        addLog(`$ Prestige locked: ${prestigeStatus.completed}/${prestigeStatus.needed} requirements met`, 'error');
+                        prestigeStatus.checks.forEach((check, idx) => addLog(`  [${check.met ? 'x' : ' '}] ${idx + 1}. ${check.label}`, check.met ? 'success' : 'warning'));
+                        return;
+                    }
+
                     if (!confirm('Formatage Complet & Installation de Rootkit ? This resets progress for permanent cores.')) {
                         addLog(`$ Prestige aborted`, 'warning');
                         return;
@@ -2893,6 +3780,97 @@
                 },
                 'contract': () => {
                     startRandomContract();
+                },
+                'contracts': () => {
+                    openContractBoard();
+                },
+                'market': () => {
+                    openBlackMarketBoard();
+                },
+                'map': () => {
+                    openWorldMap();
+                },
+                'talents': () => {
+                    addLog(`Talent points available: ${getAvailableTalentPoints()} (earned via prestige processor cores)`, 'info');
+                },
+                'story': () => {
+                    if (!arg) {
+                        addLog(`Unlocked files: ${GameState.story.unlocked.join(', ')}`, 'info');
+                        addLog(`Use: story <id>`, 'info');
+                        return;
+                    }
+                    if (!GameState.story.unlocked.includes(arg) || !STORY_LOGS[arg]) {
+                        addLog(`Unknown or locked story file: ${arg}`, 'error');
+                        return;
+                    }
+                    const entry = STORY_LOGS[arg];
+                    addLog(`>>> ${entry.title} <<<`, 'warning');
+                    addLog(entry.text, 'info');
+                },
+                'ls': () => {
+                    refreshSystemFiles();
+                    if (GameState.files.length === 0) {
+                        addLog(`(empty directory)`, 'info');
+                        return;
+                    }
+                    GameState.files.forEach(f => addLog(`${f.name}`, f.type === 'malicious' ? 'error' : 'info'));
+                },
+                'hireintel': () => {
+                    let cost = 6;
+                    if (GameState.blackMarket.market_snitch?.purchased) cost *= 0.75;
+                    if (GameState.crypto < cost) {
+                        addLog(`Need ${cost.toFixed(2)} XMR for intel broker`, 'error');
+                        return;
+                    }
+                    GameState.crypto -= cost;
+                    const ip = `203.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}.${Math.floor(Math.random()*255)}`;
+                    GameState.knownAttackerIps.unshift(ip);
+                    GameState.knownAttackerIps = [...new Set(GameState.knownAttackerIps)].slice(0, 20);
+                    addLog(`$ Broker delivered attacker IP: ${ip}`, 'success');
+                },
+                'counter': () => {
+                    if (!arg) {
+                        addLog(`Usage: counter <ip>`, 'warning');
+                        return;
+                    }
+                    if (!GameState.knownAttackerIps.includes(arg)) {
+                        addLog(`Unknown attacker IP`, 'error');
+                        return;
+                    }
+                    if (Math.random() < 0.45) {
+                        GameState.buildings.dedicated_server.count += 1n;
+                        addLog(`Counter attack success on ${arg}: +1 Dedicated Server`, 'success');
+                    } else {
+                        const loss = BigInt(Math.floor(Number(GameState.data) * 0.08));
+                        GameState.data = GameState.data > loss ? GameState.data - loss : 0n;
+                        addLog(`Counter attack failed on ${arg}: lost ${formatNumber(loss)}`, 'error');
+                    }
+                },
+                'rm': () => {
+                    if (!arg) {
+                        addLog(`Usage: rm <filename>`, 'warning');
+                        return;
+                    }
+                    const index = GameState.files.findIndex(f => f.name === arg);
+                    if (index === -1) {
+                        addLog(`rm: cannot remove '${arg}': No such file`, 'error');
+                        return;
+                    }
+                    const removed = GameState.files.splice(index, 1)[0];
+                    if (removed.name.startsWith('corporate_phone_list_')) {
+                        addLog(`Protected file cannot be removed`, 'warning');
+                        GameState.files.push(removed);
+                        return;
+                    }
+                    addLog(`removed ${removed.name}`, 'success');
+                },
+                'history': () => {
+                    if (commandHistory.length === 0) {
+                        addLog(`No command history yet`, 'info');
+                        return;
+                    }
+                    const recent = commandHistory.slice(-12);
+                    recent.forEach((cmd, idx) => addLog(`${idx + 1}. ${cmd}`, 'info'));
                 },
                 'save': () => {
                     saveGame();
@@ -2981,13 +3959,14 @@
                 applyTheme(localStorage.getItem('swamped_theme') || 'default', false);
             }
             
-            updateDisplay();
+            updateDisplay(false);
             
             setInterval(gameTick, 100);
             
             addLog(`$ Welcome to SWAMPED v3.1`, 'success');
             addLog(`$ Network infrastructure management system ready`, 'info');
-            addLog(`$ New: Emergency thermal management protocols active`, 'info');
+            refreshSystemFiles();
+            addLog(`$ New: Prestige, crypto market, contracts and rival intrusions online`, 'info');
         }
 
         init();
