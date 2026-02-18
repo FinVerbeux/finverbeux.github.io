@@ -17,6 +17,12 @@ const siteConfig = {
             highlight: true 
         },
         { 
+            title: "Swamped", 
+            desc: "Un petit jeux :p", 
+            url: "/Swamped/index.html", 
+            icon: "fa-solid fa-gamepad" 
+        },
+        { 
             title: "Dédoublonneur", 
             desc: "Nettoyer des listes et supprimer les doublons", 
             url: "dedoublonneur.html", 
@@ -71,5 +77,6 @@ const siteConfig = {
             icon: "fa-solid fa-qrcode" 
         }
     ]
+
 
 };
