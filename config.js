@@ -23,6 +23,12 @@ const siteConfig = {
             icon: "fa-solid fa-gamepad" 
         },
         { 
+            title: "Casino Hub", 
+            desc: "Quand il fait grand soif", 
+            url: "/casino/index.html", 
+            icon: "fa-solid fa-dice" 
+        },
+        { 
             title: "Dédoublonneur", 
             desc: "Nettoyer des listes et supprimer les doublons", 
             url: "dedoublonneur.html", 
@@ -80,3 +86,4 @@ const siteConfig = {
 
 
 };
+
