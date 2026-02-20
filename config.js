@@ -31,60 +31,61 @@ const siteConfig = {
         { 
             title: "Dédoublonneur", 
             desc: "Nettoyer des listes et supprimer les doublons", 
-            url: "dedoublonneur.html", 
+            url: "dedoublonneur", 
             icon: "fa-solid fa-filter" 
         },
         { 
             title: "Pass Generator V2", 
             desc: "Créer des mots de passe robustes et sécurisés", 
-            url: "password.html", 
+            url: "password", 
             icon: "fa-solid fa-key" 
         },
         { 
             title: "JSON Formatter", 
             desc: "Valider et embellir du code JSON", 
-            url: "json.html", 
+            url: "json", 
             icon: "fa-solid fa-code" 
         },
         { 
             title: "Text Tools", 
             desc: "Majuscules, minuscules, compteur de mots", 
-            url: "text-tools.html", 
+            url: "text-tools", 
             icon: "fa-solid fa-font" 
         },
         { 
             title: "URL Parser", 
             desc: "Analyse, modifie et reconstruit les paramètres d'URL", 
-            url: "url-parser.html", 
+            url: "url-parser", 
             icon: "fa-solid fa-link" 
         },
         { 
             title: "Metadata Viewer Pro", 
             desc: "Analyse avancée des métadonnées d'images avec GPS", 
-            url: "metadata-tool.html",
+            url: "metadata-tool",
             icon: "fa-solid fa-image"
         },
         { 
             title: "String Extractor & Malware Analyzer", 
             desc: "Extraction de strings et analyse de binaires avec détection d'IoCs", 
-            url: "analyzer.html",
+            url: "analyzer",
             icon: "fa-solid fa-microscope"
         },
         { 
             title: "Steganography Tool", 
             desc: "Cache ou récupère des messages dans PNG/BMP", 
-            url: "steganography.html", 
+            url: "steganography", 
             icon: "fa-solid fa-user-secret" 
         },
         { 
             title: "QR Code", 
             desc: "Générer un QR Code pour partager un lien", 
-            url: "qrcode.html", 
+            url: "qrcode", 
             icon: "fa-solid fa-qrcode" 
         }
     ]
 
 
 };
+
 
 
