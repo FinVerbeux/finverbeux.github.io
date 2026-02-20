@@ -19,13 +19,13 @@ const siteConfig = {
         { 
             title: "Swamped", 
             desc: "Un petit jeux :p", 
-            url: "/Swamped/index.html", 
+            url: "/Swamped/", 
             icon: "fa-solid fa-gamepad" 
         },
         { 
             title: "Casino Hub", 
             desc: "Quand il fait grand soif", 
-            url: "/casino/index.html", 
+            url: "/casino/", 
             icon: "fa-solid fa-dice" 
         },
         { 
@@ -86,4 +86,5 @@ const siteConfig = {
 
 
 };
+
 
