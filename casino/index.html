@@ -437,10 +437,17 @@
     <span class="game-title">Monter la Rivière</span>
   </div>
 
-  <div class="pill">
-    <span class="lbl">Gorgées totales</span>
-    <span class="val" id="rivTotalSips">0</span>
-    <span class="unit">🍺</span>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+    <div class="pill">
+      <span class="lbl">Gorgées totales</span>
+      <span class="val" id="rivTotalSips">0</span>
+      <span class="unit">🍺</span>
+    </div>
+    <div class="pill" style="gap:8px; padding: 7px 18px;">
+      <span class="lbl">Deck</span>
+      <span style="font-family:'Playfair Display',serif; font-size:1.1rem; font-weight:700; color:var(--accent)" id="rivDeckCount">52</span>
+      <span class="unit">cartes</span>
+    </div>
   </div>
 
   <div class="steps" id="rivStepDots"></div>
@@ -480,6 +487,7 @@
     <div class="bj-stat"><div class="bs-val" id="bjWins">0</div><div class="bs-lbl">Victoires</div></div>
     <div class="bj-stat"><div class="bs-val" id="bjLosses">0</div><div class="bs-lbl">Défaites</div></div>
     <div class="bj-stat"><div class="bs-val" id="bjPushes">0</div><div class="bs-lbl">Égalités</div></div>
+    <div class="bj-stat"><div class="bs-val" id="bjDeckCount" style="color:var(--accent)">52</div><div class="bs-lbl">Cartes deck</div></div>
   </div>
 
   <div class="bj-area">
@@ -570,6 +578,26 @@ function showToast(ok, icon, title, sub) {
 }
 
 // ══════════════════════════════════════════
+//  DECK PARTAGÉ UNIQUE
+// ══════════════════════════════════════════
+let sharedDeck = buildDeck();
+
+function sharedDraw() {
+  if (sharedDeck.length === 0) sharedDeck = buildDeck();
+  const card = sharedDeck.pop();
+  updateDeckCounters();
+  return card;
+}
+
+function updateDeckCounters() {
+  const n = sharedDeck.length;
+  const el1 = document.getElementById('rivDeckCount');
+  const el2 = document.getElementById('bjDeckCount');
+  if (el1) el1.textContent = n;
+  if (el2) el2.textContent = n;
+}
+
+// ══════════════════════════════════════════
 //  MONTER LA RIVIÈRE
 // ══════════════════════════════════════════
 const RIV_STEPS = [
@@ -580,7 +608,6 @@ const RIV_STEPS = [
   { q:'Quelle enseigne ? ♠ ♣ ♥ ♦', sub:'Choisis l\'enseigne de la 5ème carte.',               penalty:4 },
 ];
 
-let rivDeck = [];
 let rivCards = [];
 let rivStep  = 0;
 let rivTotalSips = 0;
@@ -589,8 +616,8 @@ let rivWaiting = false;
 let rivRoundCount = 0;
 
 function initRiviere() {
-  rivDeck = buildDeck();
   rivCards = [];
+  updateDeckCounters();
   rivStep  = 0;
   rivTotalSips = 0;
   rivRoundSips = 0;
@@ -603,11 +630,6 @@ function initRiviere() {
   document.getElementById('rivQuestionBox').style.display = 'block';
   rivRender();
   rivShowQ();
-}
-
-function rivDraw() {
-  if (rivDeck.length === 0) rivDeck = buildDeck();
-  return rivDeck.pop();
 }
 
 function rivRender() {
@@ -681,7 +703,7 @@ function rivBtn(parent, text, cb) {
 function rivAnswer(choice) {
   if (rivWaiting) return;
   rivWaiting = true;
-  const card = rivDraw();
+  const card = sharedDraw();
   rivCards.push(card);
   rivRender();
   const correct = rivCheck(choice, card);
@@ -767,7 +789,6 @@ function rivNewRound() {
 // ══════════════════════════════════════════
 //  BLACKJACK
 // ══════════════════════════════════════════
-let bjDeck        = [];
 let bjPlayerHand  = [];
 let bjDealerHand  = [];
 let bjGameOver    = false;
@@ -790,14 +811,9 @@ function bjHandScore(hand) {
   return total;
 }
 
-function bjDraw() {
-  if (bjDeck.length < 10) bjDeck = buildDeck();
-  return bjDeck.pop();
-}
-
 function initBJ() {
-  bjDeck      = buildDeck();
   bjWins=0; bjLosses=0; bjPushes=0;
+  updateDeckCounters();
   bjGameCount = 0;
   document.getElementById('bjWins').textContent   = 0;
   document.getElementById('bjLosses').textContent = 0;
@@ -808,8 +824,8 @@ function initBJ() {
 }
 
 function bjNewGame() {
-  bjPlayerHand = [bjDraw(), bjDraw()];
-  bjDealerHand = [bjDraw(), bjDraw()];
+  bjPlayerHand = [sharedDraw(), sharedDraw()];
+  bjDealerHand = [sharedDraw(), sharedDraw()];
   bjGameOver = false;
   document.getElementById('bjResultBox').style.display = 'none';
   document.getElementById('bjNewBtn').style.display  = 'none';
@@ -856,7 +872,7 @@ function bjRender(reveal) {
 
 function bjHit() {
   if (bjGameOver) return;
-  bjPlayerHand.push(bjDraw());
+  bjPlayerHand.push(sharedDraw());
   bjRender(false);
   const ps = bjHandScore(bjPlayerHand);
   if (ps > 21) {
@@ -876,7 +892,7 @@ function bjStand() {
     const ds = bjHandScore(bjDealerHand);
     if (ds < 17) {
       setTimeout(() => {
-        bjDealerHand.push(bjDraw());
+        bjDealerHand.push(sharedDraw());
         bjRender(true);
         dealerDraw();
       }, 600);
